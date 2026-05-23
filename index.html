@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
-/* ====== BB Call 外框 ====== */
+/* ====== BB Call 外殼（美化後） ====== */
 body {
     background: #0d0d0d;
     color: #eee;
@@ -52,23 +52,30 @@ button {
 .pager {
     width: 360px;
     height: 230px;
-    border-radius: 18px;
-    background: linear-gradient(145deg, #1c1c1c, #2a2a2a);
-    box-shadow: inset 0 0 8px #000, 0 0 0 3px #555, 0 10px 25px rgba(0,0,0,0.7);
-    padding: 12px;
+    border-radius: 22px;
+    background: linear-gradient(145deg, #1b1b1b, #2d2d2d);
+    box-shadow:
+        inset 0 0 10px #000,
+        0 0 0 3px #444,
+        0 12px 25px rgba(0,0,0,0.7),
+        0 0 25px rgba(0,255,0,0.15);
+    padding: 14px;
     position: relative;
     overflow: hidden;
+    border: 1px solid #222;
 }
 
 /* ====== 螢幕 ====== */
 .screen {
     background: #021a02;
-    border-radius: 6px;
-    border: 2px solid #1f4d1f;
+    border-radius: 8px;
+    border: 3px solid #0f3d0f;
     height: 130px;
     position: relative;
     overflow: hidden;
-    box-shadow: inset 0 0 6px #000;
+    box-shadow:
+        inset 0 0 10px #000,
+        0 0 10px rgba(0,255,0,0.2);
 }
 
 /* ====== REC 紅點 ====== */
@@ -117,13 +124,14 @@ button {
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0,0,0,0.85);
-    padding: 16px 22px;
-    border-radius: 10px;
+    padding: 18px 26px;
+    border-radius: 12px;
     color: #fff;
-    font-size: 16px;
+    font-size: 17px;
     text-align: center;
     display: none;
     z-index: 99999;
+    box-shadow: 0 0 12px rgba(255,255,255,0.2);
 }
 
 #downloadBtn {
@@ -165,7 +173,7 @@ button {
 
 <script>
 /* ==========================================
-   🟩 BB Call 逐行播放
+   🟩 BB Call 逐行 + 跑馬燈顯示（原本規則）
 ========================================== */
 let lines = [];
 let index = 0;
@@ -179,17 +187,39 @@ function showLine() {
     const area = document.getElementById("messageArea");
     area.innerHTML = "";
 
-    const div = document.createElement("div");
-    div.className = "pixel";
-    div.style.position = "absolute";
-    div.style.top = "55px";
-    div.style.left = "10px";
-    div.textContent = lines[index];
+    const line = document.createElement("div");
+    line.className = "pixel";
+    line.style.position = "absolute";
+    line.style.top = "55px";
+    line.style.left = "10px";
+    line.style.whiteSpace = "nowrap";
+    line.textContent = lines[index];
 
-    area.appendChild(div);
+    area.appendChild(line);
 
-    index++;
-    setTimeout(showLine, 1200);
+    const areaWidth = area.clientWidth;
+    const textWidth = line.scrollWidth;
+
+    setTimeout(() => {
+        if (textWidth > areaWidth) {
+            const overflow = textWidth - areaWidth + 30;
+            const duration = Math.max(1.5, overflow / 40);
+
+            line.style.transition = `transform ${duration}s linear`;
+            line.style.transform = `translateX(-${overflow}px)`;
+
+            setTimeout(() => {
+                index++;
+                showLine();
+            }, duration * 1000 + 1000);
+
+        } else {
+            setTimeout(() => {
+                index++;
+                showLine();
+            }, 1800);
+        }
+    }, 500);
 }
 
 /* ==========================================
@@ -206,10 +236,7 @@ async function startRecording() {
 
     const pager = document.getElementById("pager");
 
-    // 用 html2canvas 把 BB Call 轉成 Canvas
     const canvas = await html2canvas(pager);
-
-    // 用 Canvas.captureStream() 錄影
     const stream = canvas.captureStream(30);
 
     mediaRecorder = new MediaRecorder(stream, {
