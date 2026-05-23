@@ -246,11 +246,20 @@
   .line-in  { animation: lineIn 0.35s ease-out forwards; }
   .line-out { animation: lineOut 0.35s ease-in forwards; }
 
-  /* 📤 錄影完成提示 */
+  /* 📤 錄影完成提示（永遠浮在最上層） */
   #recordDoneBox {
-    margin-top: 20px;
-    display: none;
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    padding: 16px 22px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 16px;
     text-align: center;
+    display: none;
+    z-index: 9999;
   }
   #downloadBtn {
     margin-top: 10px;
@@ -259,6 +268,7 @@
     border-radius: 6px;
     color: #fff;
     border: none;
+    font-size: 15px;
   }
 </style>
 </head>
