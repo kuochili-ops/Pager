@@ -2,13 +2,14 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call - 錄影整合版</title>
+<title>BB Call - 完整恢復錄影版</title>
 
 <!-- html2canvas：把 BB Call 畫面轉成 Canvas -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
-/* ====== BB Call 外殼（美化後） ====== */
+/* 第 2 段會放 CSS */
+/* ====== 全域 ====== */
 body {
     background: #0d0d0d;
     color: #eee;
@@ -49,9 +50,10 @@ button {
 #shareBtn { background: #2196f3; }
 #recordBtn { background: #ff9800; }
 
+/* ====== BB Call 外殼 ====== */
 .pager {
     width: 360px;
-    height: 230px;
+    height: 260px;
     border-radius: 22px;
     background: linear-gradient(145deg, #1b1b1b, #2d2d2d);
     box-shadow:
@@ -70,12 +72,67 @@ button {
     background: #021a02;
     border-radius: 8px;
     border: 3px solid #0f3d0f;
-    height: 130px;
+    height: 140px;
     position: relative;
     overflow: hidden;
     box-shadow:
         inset 0 0 10px #000,
         0 0 10px rgba(0,255,0,0.2);
+}
+
+/* ====== 狀態列 ====== */
+.status-bar {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    color: #b9ffb9;
+    font-size: 12px;
+}
+
+/* 訊號格 */
+.signal {
+    display: flex;
+    gap: 2px;
+}
+
+.sig-bar {
+    width: 4px;
+    height: 8px;
+    background: #b9ffb9;
+    box-shadow: 0 0 4px #b9ffb9;
+}
+
+/* VIB */
+.vib {
+    font-weight: bold;
+    text-shadow: 0 0 4px #b9ffb9;
+}
+
+/* 電量格 */
+.battery {
+    width: 18px;
+    height: 10px;
+    border: 2px solid #b9ffb9;
+    position: relative;
+}
+
+.battery::after {
+    content: "";
+    position: absolute;
+    right: -4px;
+    top: 2px;
+    width: 3px;
+    height: 6px;
+    background: #b9ffb9;
+}
+
+.bat-level {
+    width: 70%;
+    height: 100%;
+    background: #b9ffb9;
 }
 
 /* ====== REC 紅點 ====== */
@@ -100,13 +157,13 @@ button {
     100% { opacity: 1; }
 }
 
-/* ====== 訊息區 ====== */
+/* ====== 訊息顯示區 ====== */
 .message-area {
     position: absolute;
     left: 0;
-    top: 0;
+    top: 20px;
     width: 100%;
-    height: 100%;
+    height: 110px;
     overflow: hidden;
 }
 
@@ -115,6 +172,81 @@ button {
     line-height: 44px;
     color: #b9ffb9;
     text-shadow: 0 0 6px #b9ffb9;
+    white-space: nowrap;
+}
+
+/* ====== 上滑換行動畫 ====== */
+.line-in {
+    animation: slideIn 0.35s ease-out;
+}
+
+.line-out {
+    animation: slideOut 0.35s ease-in;
+}
+
+@keyframes slideIn {
+    from { transform: translateY(40px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideOut {
+    from { transform: translateY(0); opacity: 1; }
+    to   { transform: translateY(-40px); opacity: 0; }
+}
+
+/* ====== 震動效果 ====== */
+@keyframes vibrate {
+    0% { transform: translate(1px, -1px); }
+    25% { transform: translate(-1px, 1px); }
+    50% { transform: translate(1px, 1px); }
+    75% { transform: translate(-1px, -1px); }
+    100% { transform: translate(1px, -1px); }
+}
+
+.pager.vibrate {
+    animation: vibrate 0.25s linear 4;
+}
+
+/* ====== 裝飾按鈕 ====== */
+.buttons {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.btn-round {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    box-shadow:
+        inset 0 0 4px #000,
+        0 0 6px #555;
+}
+
+.btn-long {
+    width: 40px;
+    height: 14px;
+    border-radius: 6px;
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    box-shadow:
+        inset 0 0 4px #000,
+        0 0 6px #555;
+}
+
+/* ====== 品牌字樣 ====== */
+.brand {
+    position: absolute;
+    bottom: 10px;
+    left: 12px;
+    font-size: 18px;
+    color: #ffffff;
+    text-shadow: 0 0 4px #fff, 0 0 8px #fff;
+    font-weight: bold;
+    letter-spacing: 1px;
 }
 
 /* ====== 錄影完成彈窗 ====== */
@@ -143,6 +275,7 @@ button {
     border: none;
     font-size: 15px;
 }
+
 </style>
 </head>
 
@@ -158,11 +291,41 @@ button {
 
 <!-- ====== BB Call 裝置 ====== -->
 <div class="pager" id="pager">
+
+  <!-- ====== 螢幕 ====== -->
   <div class="screen" id="screen">
+
+      <!-- 🔴 REC 紅點 -->
       <div class="rec-indicator" id="recDot">REC ●</div>
+
+      <!-- ====== 狀態列 ====== -->
+      <div class="status-bar">
+        <div class="signal">
+          <span class="sig-bar"></span>
+          <span class="sig-bar"></span>
+          <span class="sig-bar"></span>
+        </div>
+        <div class="vib" id="vibIcon">VIB</div>
+        <div class="battery">
+          <div class="bat-level"></div>
+        </div>
+      </div>
+
+      <!-- ====== 訊息顯示區 ====== -->
       <div class="message-area" id="messageArea"></div>
+
   </div>
+
+  <!-- ====== 品牌字樣 ====== -->
   <div class="brand">𓃥 白六 Call</div>
+
+  <!-- ====== 裝飾按鈕 ====== -->
+  <div class="buttons">
+    <div class="btn-round"></div>
+    <div class="btn-long"></div>
+    <div class="btn-round"></div>
+  </div>
+
 </div>
 
 <!-- ====== 錄影完成彈窗 ====== -->
@@ -172,8 +335,9 @@ button {
 </div>
 
 <script>
+/* 第 3 段會放 JS */
 /* ==========================================
-   🟩 BB Call 逐行 + 跑馬燈顯示（原本規則）
+   🟩 BB Call 逐行 + 跑馬燈 + 上滑換行動畫
 ========================================== */
 let lines = [];
 let index = 0;
@@ -188,11 +352,10 @@ function showLine() {
     area.innerHTML = "";
 
     const line = document.createElement("div");
-    line.className = "pixel";
+    line.className = "pixel line-in";
     line.style.position = "absolute";
-    line.style.top = "55px";
+    line.style.top = "40px";
     line.style.left = "10px";
-    line.style.whiteSpace = "nowrap";
     line.textContent = lines[index];
 
     area.appendChild(line);
@@ -209,17 +372,38 @@ function showLine() {
             line.style.transform = `translateX(-${overflow}px)`;
 
             setTimeout(() => {
-                index++;
-                showLine();
+                line.classList.remove("line-in");
+                line.classList.add("line-out");
+
+                setTimeout(() => {
+                    index++;
+                    showLine();
+                }, 350);
+
             }, duration * 1000 + 1000);
 
         } else {
             setTimeout(() => {
-                index++;
-                showLine();
+                line.classList.remove("line-in");
+                line.classList.add("line-out");
+
+                setTimeout(() => {
+                    index++;
+                    showLine();
+                }, 350);
+
             }, 1800);
         }
     }, 500);
+}
+
+/* ==========================================
+   🌀 震動效果
+========================================== */
+function vibratePager() {
+    const pager = document.getElementById("pager");
+    pager.classList.add("vibrate");
+    setTimeout(() => pager.classList.remove("vibrate"), 800);
 }
 
 /* ==========================================
@@ -283,11 +467,35 @@ function exportVideo() {
 }
 
 /* ==========================================
+   🔗 分享模式 view=clean
+========================================== */
+function applyShareMode() {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("view") === "clean") {
+        document.querySelector(".input-area").style.display = "none";
+        document.getElementById("shareBtn").style.display = "none";
+    }
+
+    if (params.get("record") === "1") {
+        const msg = params.get("msg") || "";
+        lines = msg.split("\n");
+        index = 0;
+
+        startRecording();
+        showLine();
+    }
+}
+
+/* ==========================================
    🔘 按鈕綁定
 ========================================== */
 document.getElementById("sendBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     if (!msg) return;
+
+    vibratePager();
+
     lines = msg.split("\n");
     index = 0;
     showLine();
@@ -297,12 +505,20 @@ document.getElementById("recordBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     if (!msg) return;
 
+    vibratePager();
+
     lines = msg.split("\n");
     index = 0;
 
     startRecording();
     showLine();
 };
+
+/* ==========================================
+   🚀 啟動分享模式
+========================================== */
+applyShareMode();
+
 </script>
 
 </body>
