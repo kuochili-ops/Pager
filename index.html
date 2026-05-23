@@ -92,6 +92,27 @@
     box-shadow: inset 0 0 6px #000;
   }
 
+  /* 🔴 REC 紅點 */
+  .rec-indicator {
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #ff3b3b;
+    text-shadow: 0 0 4px #ff3b3b, 0 0 8px #ff3b3b;
+    opacity: 0;
+    pointer-events: none;
+  }
+  @keyframes recBlink {
+    0% { opacity: 1; }
+    50% { opacity: 0.2; }
+    100% { opacity: 1; }
+  }
+  .rec-on {
+    animation: recBlink 0.8s infinite;
+  }
+
   /* 狀態列 */
   .status-bar {
     position: absolute;
@@ -237,6 +258,10 @@
 
 <div class="pager" id="pager">
   <div class="screen" id="screen">
+
+    <!-- 🔴 REC 紅點 -->
+    <div class="rec-indicator" id="recDot">REC ●</div>
+
     <div class="status-bar">
       <div class="signal">
         <span class="sig-bar"></span>
@@ -248,6 +273,7 @@
         <div class="bat-level"></div>
       </div>
     </div>
+
     <div class="message-area" id="messageArea"></div>
   </div>
 
@@ -268,20 +294,35 @@ const msgInput = document.getElementById("msgInput");
 const messageArea = document.getElementById("messageArea");
 const pager = document.getElementById("pager");
 const vibIcon = document.getElementById("vibIcon");
+const recDot = document.getElementById("recDot");
 
 let lines = [];
 let index = 0;
 
-/* -----------------------------
-   🎥 錄影功能
------------------------------- */
-let recording = false;
+/* ----------------------------------------------------
+   🎥 錄影模式：重新載入頁面後自動開始錄影
+---------------------------------------------------- */
+const params = new URLSearchParams(location.search);
+let recording = params.get("record") === "1";
 let frames = [];
 let recorderTimer = null;
 
+/* 重新載入頁面並帶入錄影參數 */
+recordBtn.addEventListener("click", () => {
+  const text = msgInput.value.trim();
+  if (!text) return;
+
+  const encoded = encodeURIComponent(text);
+  const url = `${location.origin}${location.pathname}?msg=${encoded}&record=1`;
+
+  location.href = url;
+});
+
+/* 若為錄影模式 → 自動開始錄影 */
 async function startRecording() {
-  recording = true;
   frames = [];
+  recDot.classList.add("rec-on");
+  recDot.style.opacity = 1;
 
   recorderTimer = setInterval(async () => {
     const canvas = await html2canvas(document.querySelector(".pager"));
@@ -289,9 +330,12 @@ async function startRecording() {
   }, 120);
 }
 
+/* 錄影結束 → 自動存檔 */
 function stopRecording() {
   clearInterval(recorderTimer);
-  recording = false;
+
+  recDot.classList.remove("rec-on");
+  recDot.style.opacity = 0;
 
   const encoder = new Whammy.Video(8);
   frames.forEach(c => encoder.add(c));
@@ -304,9 +348,9 @@ function stopRecording() {
   a.click();
 }
 
-/* -----------------------------
+/* ----------------------------------------------------
    📳 震動效果
------------------------------- */
+---------------------------------------------------- */
 function vibrate() {
   pager.classList.add("vibrate");
   vibIcon.classList.add("vib-blink");
@@ -315,9 +359,9 @@ function vibrate() {
   setTimeout(() => vibIcon.classList.remove("vib-blink"), 800);
 }
 
-/* -----------------------------
+/* ----------------------------------------------------
    🟩 長字串三階段規則
------------------------------- */
+---------------------------------------------------- */
 function applyLongTextScroll(inner, callback) {
   const areaWidth = messageArea.clientWidth;
   const textWidth = inner.scrollWidth;
@@ -342,11 +386,11 @@ function applyLongTextScroll(inner, callback) {
   }, 500);
 }
 
-/* -----------------------------
-   🟩 顯示一行
------------------------------- */
+/* ----------------------------------------------------
+   🟩 顯示一行（含錄影結束判斷）
+---------------------------------------------------- */
 function showLine() {
-  if (!lines.length) {
+  if (index >= lines.length) {
     if (recording) stopRecording();
     return;
   }
@@ -369,14 +413,14 @@ function showLine() {
   messageArea.appendChild(line);
 
   applyLongTextScroll(inner, () => {
-    index = (index + 1) % lines.length;
+    index++;
     showLine();
   });
 }
 
-/* -----------------------------
+/* ----------------------------------------------------
    📤 分享鍵
------------------------------- */
+---------------------------------------------------- */
 shareBtn.addEventListener("click", () => {
   const text = msgInput.value.trim();
   if (!text) return;
@@ -389,9 +433,9 @@ shareBtn.addEventListener("click", () => {
   });
 });
 
-/* -----------------------------
+/* ----------------------------------------------------
    ▶️ 播放訊息
------------------------------- */
+---------------------------------------------------- */
 sendBtn.addEventListener("click", () => {
   const text = msgInput.value.trim();
   if (!text) return;
@@ -403,31 +447,31 @@ sendBtn.addEventListener("click", () => {
   showLine();
 });
 
-/* -----------------------------
-   🎥 錄影鍵
------------------------------- */
-recordBtn.addEventListener("click", () => {
-  const text = msgInput.value.trim();
-  if (!text) return;
-
-  lines = text.split("\n").filter(l => l.trim() !== "");
-  index = 0;
-
-  startRecording();
-  vibrate();
-  showLine();
-});
-
-/* -----------------------------
+/* ----------------------------------------------------
    🔍 純顯示模式（分享連結用）
------------------------------- */
-const params = new URLSearchParams(location.search);
+---------------------------------------------------- */
 if (params.get("view") === "clean") {
   document.querySelector(".input-area").style.display = "none";
   const msg = decodeURIComponent(params.get("msg") || "");
   msgInput.value = msg;
   lines = msg.split("\n");
   index = 0;
+  vibrate();
+  showLine();
+}
+
+/* ----------------------------------------------------
+   🎥 錄影模式啟動
+---------------------------------------------------- */
+if (recording) {
+  document.querySelector(".input-area").style.display = "none";
+
+  const msg = decodeURIComponent(params.get("msg") || "");
+  msgInput.value = msg;
+  lines = msg.split("\n").filter(l => l.trim() !== "");
+  index = 0;
+
+  startRecording();
   vibrate();
   showLine();
 }
