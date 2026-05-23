@@ -245,6 +245,21 @@
   }
   .line-in  { animation: lineIn 0.35s ease-out forwards; }
   .line-out { animation: lineOut 0.35s ease-in forwards; }
+
+  /* 📤 錄影完成提示 */
+  #recordDoneBox {
+    margin-top: 20px;
+    display: none;
+    text-align: center;
+  }
+  #downloadBtn {
+    margin-top: 10px;
+    padding: 10px 16px;
+    background: #ff5722;
+    border-radius: 6px;
+    color: #fff;
+    border: none;
+  }
 </style>
 </head>
 <body>
@@ -286,15 +301,23 @@
   </div>
 </div>
 
+<!-- 📤 錄影完成提示 -->
+<div id="recordDoneBox">
+  <div>🎉 錄影完成！</div>
+  <button id="downloadBtn">下載影片</button>
+</div>
+
 <script>
 const sendBtn = document.getElementById("sendBtn");
 const shareBtn = document.getElementById("shareBtn");
 const recordBtn = document.getElementById("recordBtn");
+const downloadBtn = document.getElementById("downloadBtn");
 const msgInput = document.getElementById("msgInput");
 const messageArea = document.getElementById("messageArea");
 const pager = document.getElementById("pager");
 const vibIcon = document.getElementById("vibIcon");
 const recDot = document.getElementById("recDot");
+const recordDoneBox = document.getElementById("recordDoneBox");
 
 let lines = [];
 let index = 0;
@@ -306,6 +329,7 @@ const params = new URLSearchParams(location.search);
 let recording = params.get("record") === "1";
 let frames = [];
 let recorderTimer = null;
+let lastVideoBlob = null;
 
 /* 重新載入頁面並帶入錄影參數 */
 recordBtn.addEventListener("click", () => {
@@ -330,7 +354,7 @@ async function startRecording() {
   }, 120);
 }
 
-/* 錄影結束 → 自動存檔 */
+/* 錄影結束 → 自動存檔 + 顯示提示 */
 function stopRecording() {
   clearInterval(recorderTimer);
 
@@ -340,13 +364,29 @@ function stopRecording() {
   const encoder = new Whammy.Video(8);
   frames.forEach(c => encoder.add(c));
   const output = encoder.compile();
+  lastVideoBlob = output;
+
   const url = URL.createObjectURL(output);
 
+  // 自動下載
   const a = document.createElement("a");
   a.href = url;
   a.download = "bailiu_call_record.webm";
   a.click();
+
+  // 顯示提示 + 手動下載按鈕
+  recordDoneBox.style.display = "block";
 }
+
+/* 手動下載按鈕 */
+downloadBtn.addEventListener("click", () => {
+  if (!lastVideoBlob) return;
+  const url = URL.createObjectURL(lastVideoBlob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "bailiu_call_record.webm";
+  a.click();
+});
 
 /* ----------------------------------------------------
    📳 震動效果
