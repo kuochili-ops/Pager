@@ -2,69 +2,27 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call - MediaRecorder 錄影版</title>
+<title>BB Call - 錄影整合版</title>
+
+<!-- html2canvas：把 BB Call 畫面轉成 Canvas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <style>
 /* ====== BB Call 外框 ====== */
-.pager {
-    width: 360px;
-    height: 230px;
-    border-radius: 18px;
-    background: #111;
-    box-shadow: 0 0 20px rgba(0,0,0,0.6);
-    padding: 0;
-    position: relative;
-    margin-top: 20px;
-}
-
-/* ====== 錄影完成彈窗 ====== */
-#download-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0,0,0,0.75);
-    display: none;
-    justify-content: center;
+body {
+    background: #0d0d0d;
+    color: #eee;
+    font-family: "Courier New", monospace;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    z-index: 99999;
+    padding-top: 20px;
 }
 
-.overlay-box {
-    background: #111;
-    padding: 20px 30px;
-    border-radius: 12px;
-    color: #fff;
-    text-align: center;
-    box-shadow: 0 0 20px rgba(255,255,255,0.2);
-}
-
-.overlay-box button {
-    margin-top: 12px;
-    padding: 10px 20px;
-    background: #ff5722;
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 16px;
-}
-
-/* ====== 錄影中按鈕閃爍 ====== */
-#recordBtn.recording {
-    background: #ff1744;
-    animation: blinkRecord 0.8s infinite;
-}
-
-@keyframes blinkRecord {
-    0% { opacity: 1; }
-    50% { opacity: 0.3; }
-    100% { opacity: 1; }
-}
-
-/* ====== 輸入區 ====== */
 .input-area {
     display: flex;
     gap: 10px;
-    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 textarea {
@@ -77,7 +35,6 @@ textarea {
     color: #eee;
     font-size: 16px;
     resize: none;
-    white-space: pre-wrap;
 }
 
 button {
@@ -91,6 +48,93 @@ button {
 
 #shareBtn { background: #2196f3; }
 #recordBtn { background: #ff9800; }
+
+.pager {
+    width: 360px;
+    height: 230px;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #1c1c1c, #2a2a2a);
+    box-shadow: inset 0 0 8px #000, 0 0 0 3px #555, 0 10px 25px rgba(0,0,0,0.7);
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ====== 螢幕 ====== */
+.screen {
+    background: #021a02;
+    border-radius: 6px;
+    border: 2px solid #1f4d1f;
+    height: 130px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 6px #000;
+}
+
+/* ====== REC 紅點 ====== */
+.rec-indicator {
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #ff3b3b;
+    text-shadow: 0 0 4px #ff3b3b;
+    opacity: 0;
+}
+
+.rec-on {
+    animation: recBlink 0.8s infinite;
+}
+
+@keyframes recBlink {
+    0% { opacity: 1; }
+    50% { opacity: 0.2; }
+    100% { opacity: 1; }
+}
+
+/* ====== 訊息區 ====== */
+.message-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.pixel {
+    font-size: 44px;
+    line-height: 44px;
+    color: #b9ffb9;
+    text-shadow: 0 0 6px #b9ffb9;
+}
+
+/* ====== 錄影完成彈窗 ====== */
+#recordDoneBox {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    padding: 16px 22px;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 16px;
+    text-align: center;
+    display: none;
+    z-index: 99999;
+}
+
+#downloadBtn {
+    margin-top: 10px;
+    padding: 10px 16px;
+    background: #ff5722;
+    border-radius: 6px;
+    color: #fff;
+    border: none;
+    font-size: 15px;
+}
 </style>
 </head>
 
@@ -101,78 +145,78 @@ button {
   <textarea id="msgInput" placeholder="輸入訊息（Enter 換行）"></textarea>
   <button id="sendBtn">送出</button>
   <button id="shareBtn">分享</button>
-  <button id="recordBtn">🔴 錄製製作</button>
+  <button id="recordBtn">🔴 錄影</button>
 </div>
 
-<!-- ====== BB Call 裝置（Canvas） ====== -->
+<!-- ====== BB Call 裝置 ====== -->
 <div class="pager" id="pager">
-  <canvas id="bbCanvas" width="360" height="230"></canvas>
+  <div class="screen" id="screen">
+      <div class="rec-indicator" id="recDot">REC ●</div>
+      <div class="message-area" id="messageArea"></div>
+  </div>
+  <div class="brand">𓃥 白六 Call</div>
 </div>
 
 <!-- ====== 錄影完成彈窗 ====== -->
-<div id="download-overlay">
-    <div class="overlay-box">
-        <h2>✨ 錄製完成！</h2>
-        <p>影片已自動下載，如未成功請點擊下方按鈕。</p>
-        <button id="manualDownloadBtn2">下載影片</button>
-    </div>
+<div id="recordDoneBox">
+  <div>🎉 錄影完成！</div>
+  <button id="downloadBtn">下載影片</button>
 </div>
 
-<!-- ====== JS（下一段會補上） ====== -->
 <script>
 /* ==========================================
-   📟 BB Call 畫面渲染（Canvas）
+   🟩 BB Call 逐行播放
 ========================================== */
-const canvas = document.getElementById("bbCanvas");
-const ctx = canvas.getContext("2d");
+let lines = [];
+let index = 0;
 
-let carouselLines = [];      // 要播放的文字
-let currentLineIndex = 0;
-let frameDuration = 1200;    // 每行停留時間（毫秒）
+function showLine() {
+    if (index >= lines.length) {
+        stopRecording();
+        return;
+    }
 
-function renderLine(text) {
-    // 背景
-    ctx.fillStyle = "#021a02";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const area = document.getElementById("messageArea");
+    area.innerHTML = "";
 
-    // 文字
-    ctx.fillStyle = "#b9ffb9";
-    ctx.font = "32px monospace";
-    ctx.fillText(text, 20, 120);
+    const div = document.createElement("div");
+    div.className = "pixel";
+    div.style.position = "absolute";
+    div.style.top = "55px";
+    div.style.left = "10px";
+    div.textContent = lines[index];
+
+    area.appendChild(div);
+
+    index++;
+    setTimeout(showLine, 1200);
 }
 
 /* ==========================================
-   🎥 MediaRecorder 錄影模組
+   🎥 MediaRecorder 錄影整合
 ========================================== */
 let mediaRecorder;
 let recordedChunks = [];
 let isRecording = false;
 
-function startAutoRecording() {
+async function startRecording() {
     if (isRecording) return;
 
-    const msg = document.getElementById("msgInput").value.trim();
-    if (!msg) return;
-
-    carouselLines = msg.split("\n");
-    currentLineIndex = 0;
     recordedChunks = [];
 
-    // 從 Canvas 擷取串流
+    const pager = document.getElementById("pager");
+
+    // 用 html2canvas 把 BB Call 轉成 Canvas
+    const canvas = await html2canvas(pager);
+
+    // 用 Canvas.captureStream() 錄影
     const stream = canvas.captureStream(30);
 
-    const options = { 
-        mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 8000000
-    };
+    mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "video/webm;codecs=vp9"
+    });
 
-    try {
-        mediaRecorder = new MediaRecorder(stream, options);
-    } catch (e) {
-        mediaRecorder = new MediaRecorder(stream);
-    }
-
-    mediaRecorder.ondataavailable = (e) => {
+    mediaRecorder.ondataavailable = e => {
         if (e.data.size > 0) recordedChunks.push(e.data);
     };
 
@@ -181,77 +225,58 @@ function startAutoRecording() {
     mediaRecorder.start();
     isRecording = true;
 
-    // UI：按鈕變紅閃爍
-    const recordBtn = document.getElementById("recordBtn");
-    recordBtn.classList.add("recording");
-    recordBtn.innerText = "錄製製作中";
-
-    startCarousel();
+    document.getElementById("recDot").classList.add("rec-on");
 }
 
 function stopRecording() {
-    if (isRecording) {
-        mediaRecorder.stop();
-        isRecording = false;
+    if (!isRecording) return;
+    mediaRecorder.stop();
+    isRecording = false;
 
-        const recordBtn = document.getElementById("recordBtn");
-        recordBtn.classList.remove("recording");
-        recordBtn.innerText = "🔴 錄製製作";
-    }
+    document.getElementById("recDot").classList.remove("rec-on");
 }
 
 function exportVideo() {
     const blob = new Blob(recordedChunks, { type: "video/webm" });
     const url = URL.createObjectURL(blob);
 
-    // 自動下載
     const a = document.createElement("a");
     a.href = url;
-    a.download = `BBCall_${Date.now()}.webm`;
+    a.download = `bbcall_${Date.now()}.webm`;
     a.click();
 
-    // 手動下載備用
-    document.getElementById("manualDownloadBtn2").onclick = () => a.click();
+    document.getElementById("recordDoneBox").style.display = "block";
 
-    // 顯示彈窗
-    document.getElementById("download-overlay").style.display = "flex";
-}
-
-/* ==========================================
-   🌀 文字輪播（含自動停止錄影）
-========================================== */
-function startCarousel() {
-    const totalLines = carouselLines.length;
-
-    function nextFrame() {
-        if (currentLineIndex >= totalLines) {
-            stopRecording();   // ← 錄影一定會停止
-            return;
-        }
-
-        renderLine(carouselLines[currentLineIndex]);
-        currentLineIndex++;
-
-        setTimeout(nextFrame, frameDuration);
-    }
-
-    nextFrame();
+    document.getElementById("downloadBtn").onclick = () => {
+        const a2 = document.createElement("a");
+        a2.href = url;
+        a2.download = `bbcall_${Date.now()}.webm`;
+        a2.click();
+    };
 }
 
 /* ==========================================
    🔘 按鈕綁定
 ========================================== */
-document.getElementById("recordBtn").onclick = startAutoRecording;
-
 document.getElementById("sendBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     if (!msg) return;
-    carouselLines = msg.split("\n");
-    currentLineIndex = 0;
-    renderLine(carouselLines[0]);
+    lines = msg.split("\n");
+    index = 0;
+    showLine();
+};
+
+document.getElementById("recordBtn").onclick = () => {
+    const msg = document.getElementById("msgInput").value.trim();
+    if (!msg) return;
+
+    lines = msg.split("\n");
+    index = 0;
+
+    startRecording();
+    showLine();
 };
 </script>
 
 </body>
 </html>
-
