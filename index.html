@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<title>𓃥 白六 Call - 完整錄影版</title>
+
+<!-- html2canvas + Whammy.js（錄影用） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/antimatter15/whammy/whammy.js"></script>
+
+<style>
+  body {
+    font-family: "Courier New", monospace;
+    background: #0d0d0d;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 20px;
+  }
+
+  .input-area {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  textarea {
+    width: 260px;
+    height: 120px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #555;
+    background: #1a1a1a;
+    color: #eee;
+    font-size: 16px;
+    resize: none;
+    white-space: pre-wrap;
+  }
+  button {
+    padding: 10px 16px;
+    border-radius: 6px;
+    border: none;
+    background: #4caf50;
+    color: #fff;
+    font-size: 15px;
+  }
+  #shareBtn { background: #2196f3; }
+  #recordBtn { background: #ff9800; }
+
+  /* 📱 手機直式寬度 */
+  .pager {
+    width: min(360px, 90vw);
+    height: 230px;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #1c1c1c, #2a2a2a);
+    box-shadow:
+      inset 0 0 8px #000,
+      0 0 0 3px #555,
+      0 10px 25px rgba(0,0,0,0.7);
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* 📳 震動效果 */
+  @keyframes vibrate {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(3px, -3px); }
+    50% { transform: translate(-3px, 3px); }
+    75% { transform: translate(3px, 3px); }
+    100% { transform: translate(0, 0); }
+  }
+  .vibrate { animation: vibrate 0.25s linear 4; }
+
+  .vib-blink {
+    animation: vibBlink 0.4s linear 4;
+  }
+  @keyframes vibBlink {
+    0% { opacity: 1; }
+    50% { opacity: 0.2; }
+    100% { opacity: 1; }
+  }
+
+  /* 📺 螢幕 */
+  .screen {
+    background: #021a02;
+    border-radius: 6px;
+    border: 2px solid #1f4d1f;
+    height: 130px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 6px #000;
+  }
+
+  /* 狀態列 */
+  .status-bar {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    color: #b9ffb9;
+    align-items: center;
+  }
+
+  .signal .sig-bar {
+    display: inline-block;
+    width: 4px;
+    background: #b9ffb9;
+    margin-right: 1px;
+  }
+  .signal .sig-bar:nth-child(1) { height: 6px; }
+  .signal .sig-bar:nth-child(2) { height: 10px; }
+  .signal .sig-bar:nth-child(3) { height: 14px; }
+
+  .vib { font-weight: bold; letter-spacing: 1px; }
+
+  .battery {
+    border: 1px solid #b9ffb9;
+    width: 20px;
+    height: 10px;
+    position: relative;
+  }
+  .battery::after {
+    content: "";
+    position: absolute;
+    right: -3px;
+    top: 3px;
+    width: 2px;
+    height: 4px;
+    background: #b9ffb9;
+  }
+  .bat-level {
+    width: 70%;
+    height: 100%;
+    background: #b9ffb9;
+  }
+
+  /* 🏷️ 白色品牌名 */
+  .brand {
+    position: absolute;
+    bottom: 8px;
+    left: 12px;
+    font-size: 18px;
+    color: #ffffff;
+    text-shadow: 0 0 4px #fff, 0 0 8px #fff;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  /* 🔘 裝飾按鈕 */
+  .buttons {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    display: flex;
+    gap: 10px;
+  }
+  .btn-round {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #333;
+    box-shadow: inset 0 0 4px #000, 0 0 4px #666;
+  }
+  .btn-long {
+    width: 60px;
+    height: 18px;
+    border-radius: 10px;
+    background: #333;
+    box-shadow: inset 0 0 4px #000, 0 0 4px #666;
+  }
+
+  /* 🟩 訊息顯示區 */
+  .message-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* 點陣字型 */
+  .pixel {
+    font-family: monospace;
+    font-size: 44px;
+    line-height: 44px;
+    letter-spacing: 2px;
+    color: #b9ffb9;
+    text-shadow:
+      0 0 3px #b9ffb9,
+      0 0 6px #b9ffb9,
+      0 0 10px #b9ffb9;
+  }
+
+  .line {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 44px;
+    top: 55px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    pointer-events: none;
+    padding-left: 10px;
+  }
+
+  .line-inner {
+    white-space: nowrap;
+    will-change: transform;
+    transform: translateX(0);
+  }
+
+  @keyframes lineIn {
+    0%   { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes lineOut {
+    0%   { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-40px); }
+  }
+  .line-in  { animation: lineIn 0.35s ease-out forwards; }
+  .line-out { animation: lineOut 0.35s ease-in forwards; }
+</style>
+</head>
+<body>
+
+<div class="input-area">
+  <textarea id="msgInput" placeholder="輸入訊息（Enter 換行）"></textarea>
+  <button id="sendBtn">送出</button>
+  <button id="shareBtn">分享</button>
+  <button id="recordBtn">錄影</button>
+</div>
+
+<div class="pager" id="pager">
+  <div class="screen" id="screen">
+    <div class="status-bar">
+      <div class="signal">
+        <span class="sig-bar"></span>
+        <span class="sig-bar"></span>
+        <span class="sig-bar"></span>
+      </div>
+      <div class="vib" id="vibIcon">VIB</div>
+      <div class="battery">
+        <div class="bat-level"></div>
+      </div>
+    </div>
+    <div class="message-area" id="messageArea"></div>
+  </div>
+
+  <div class="brand">𓃥 白六 Call</div>
+
+  <div class="buttons">
+    <div class="btn-round"></div>
+    <div class="btn-long"></div>
+    <div class="btn-round"></div>
+  </div>
+</div>
+
+<script>
+const sendBtn = document.getElementById("sendBtn");
+const shareBtn = document.getElementById("shareBtn");
+const recordBtn = document.getElementById("recordBtn");
+const msgInput = document.getElementById("msgInput");
+const messageArea = document.getElementById("messageArea");
+const pager = document.getElementById("pager");
+const vibIcon = document.getElementById("vibIcon");
+
+let lines = [];
+let index = 0;
+
+/* -----------------------------
+   🎥 錄影功能
+------------------------------ */
+let recording = false;
+let frames = [];
+let recorderTimer = null;
+
+async function startRecording() {
+  recording = true;
+  frames = [];
+
+  recorderTimer = setInterval(async () => {
+    const canvas = await html2canvas(document.querySelector(".pager"));
+    frames.push(canvas);
+  }, 120);
+}
+
+function stopRecording() {
+  clearInterval(recorderTimer);
+  recording = false;
+
+  const encoder = new Whammy.Video(8);
+  frames.forEach(c => encoder.add(c));
+  const output = encoder.compile();
+  const url = URL.createObjectURL(output);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "bailiu_call_record.webm";
+  a.click();
+}
+
+/* -----------------------------
+   📳 震動效果
+------------------------------ */
+function vibrate() {
+  pager.classList.add("vibrate");
+  vibIcon.classList.add("vib-blink");
+
+  setTimeout(() => pager.classList.remove("vibrate"), 1000);
+  setTimeout(() => vibIcon.classList.remove("vib-blink"), 800);
+}
+
+/* -----------------------------
+   🟩 長字串三階段規則
+------------------------------ */
+function applyLongTextScroll(inner, callback) {
+  const areaWidth = messageArea.clientWidth;
+  const textWidth = inner.scrollWidth;
+
+  if (textWidth <= areaWidth) {
+    setTimeout(callback, 1800);
+    return;
+  }
+
+  const overflow = textWidth - areaWidth;
+  const extra = 30;
+
+  setTimeout(() => {
+    const duration = Math.max(1.5, (overflow + extra) / 40);
+    inner.style.transition = `transform ${duration}s linear`;
+    inner.style.transform = `translateX(-${overflow + extra}px)`;
+
+    setTimeout(() => {
+      setTimeout(callback, 1000);
+    }, duration * 1000);
+
+  }, 500);
+}
+
+/* -----------------------------
+   🟩 顯示一行
+------------------------------ */
+function showLine() {
+  if (!lines.length) {
+    if (recording) stopRecording();
+    return;
+  }
+
+  const text = lines[index];
+
+  const oldLine = messageArea.querySelector(".line");
+  if (oldLine) {
+    oldLine.classList.add("line-out");
+    setTimeout(() => oldLine.remove(), 350);
+  }
+
+  const line = document.createElement("div");
+  line.className = "line line-in";
+
+  const inner = document.createElement("div");
+  inner.className = "line-inner pixel";
+  inner.textContent = text;
+  line.appendChild(inner);
+  messageArea.appendChild(line);
+
+  applyLongTextScroll(inner, () => {
+    index = (index + 1) % lines.length;
+    showLine();
+  });
+}
+
+/* -----------------------------
+   📤 分享鍵
+------------------------------ */
+shareBtn.addEventListener("click", () => {
+  const text = msgInput.value.trim();
+  if (!text) return;
+
+  const encoded = encodeURIComponent(text);
+  const url = `${location.origin}${location.pathname}?msg=${encoded}&view=clean`;
+
+  navigator.clipboard.writeText(url).then(() => {
+    alert("已複製分享連結，可貼到通訊軟體！");
+  });
+});
+
+/* -----------------------------
+   ▶️ 播放訊息
+------------------------------ */
+sendBtn.addEventListener("click", () => {
+  const text = msgInput.value.trim();
+  if (!text) return;
+
+  lines = text.split("\n").filter(l => l.trim() !== "");
+  index = 0;
+
+  vibrate();
+  showLine();
+});
+
+/* -----------------------------
+   🎥 錄影鍵
+------------------------------ */
+recordBtn.addEventListener("click", () => {
+  const text = msgInput.value.trim();
+  if (!text) return;
+
+  lines = text.split("\n").filter(l => l.trim() !== "");
+  index = 0;
+
+  startRecording();
+  vibrate();
+  showLine();
+});
+
+/* -----------------------------
+   🔍 純顯示模式（分享連結用）
+------------------------------ */
+const params = new URLSearchParams(location.search);
+if (params.get("view") === "clean") {
+  document.querySelector(".input-area").style.display = "none";
+  const msg = decodeURIComponent(params.get("msg") || "");
+  msgInput.value = msg;
+  lines = msg.split("\n");
+  index = 0;
+  vibrate();
+  showLine();
+}
+</script>
+
+</body>
+</html>
