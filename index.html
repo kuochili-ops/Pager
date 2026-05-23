@@ -249,7 +249,7 @@
   /* 📤 錄影完成提示（永遠浮在最上層） */
   #recordDoneBox {
     position: fixed;
-    bottom: 30px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0,0,0,0.85);
@@ -259,7 +259,7 @@
     font-size: 16px;
     text-align: center;
     display: none;
-    z-index: 9999;
+    z-index: 99999;
   }
   #downloadBtn {
     margin-top: 10px;
@@ -272,6 +272,7 @@
   }
 </style>
 </head>
+
 <body>
 
 <div class="input-area">
@@ -317,21 +318,8 @@
   <button id="downloadBtn">下載影片</button>
 </div>
 
+<!-- JS 會在下一則訊息提供 -->
 <script>
-const sendBtn = document.getElementById("sendBtn");
-const shareBtn = document.getElementById("shareBtn");
-const recordBtn = document.getElementById("recordBtn");
-const downloadBtn = document.getElementById("downloadBtn");
-const msgInput = document.getElementById("msgInput");
-const messageArea = document.getElementById("messageArea");
-const pager = document.getElementById("pager");
-const vibIcon = document.getElementById("vibIcon");
-const recDot = document.getElementById("recDot");
-const recordDoneBox = document.getElementById("recordDoneBox");
-
-let lines = [];
-let index = 0;
-
 /* ----------------------------------------------------
    🎥 錄影模式：重新載入頁面後自動開始錄影
 ---------------------------------------------------- */
@@ -529,3 +517,4 @@ if (recording) {
 
 </body>
 </html>
+  
