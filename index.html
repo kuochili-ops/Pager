@@ -349,7 +349,7 @@ function slideOutStep() {
 document.getElementById("shareBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     const url = location.href.split("?")[0];
-    const shareText = `${url}?msg=${encodeURIComponent(msg)}`;
+    const shareText = `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
 
     navigator.clipboard.writeText(shareText);
     alert("已複製分享連結！");
@@ -359,7 +359,7 @@ document.getElementById("shareBtn").onclick = () => {
 document.getElementById("shareFrontBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     const url = location.href.split("?")[0];
-    const shareText = `${url}?msg=${encodeURIComponent(msg)}`;
+    const shareText = `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
 
     navigator.clipboard.writeText(shareText);
     alert("已複製分享連結！");
@@ -373,6 +373,21 @@ document.getElementById("sendBtn").onclick = () => {
     index = 0;
     showLine();
 };
+
+/* ⭐ 網頁載入時檢查是否 clean=1 → 隱藏操作介面 */
+const params = new URLSearchParams(location.search);
+if (params.get("clean") === "1") {
+    document.querySelector(".input-area").style.display = "none";
+    document.querySelector(".front-buttons").style.display = "none";
+
+    /* 自動播放 URL 的訊息 */
+    const urlMsg = params.get("msg");
+    if (urlMsg) {
+        lines = urlMsg.split("\n");
+        index = 0;
+        showLine();
+    }
+}
 </script>
 
 </body>
