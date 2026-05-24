@@ -310,10 +310,12 @@ function showLine() {
     slideInProgress = 0;
     slideOutProgress = 0;
 
-    /* ⭐ 來訊震動 */
-    const pager = document.querySelector(".pager");
-    pager.classList.add("shake");
-    setTimeout(() => pager.classList.remove("shake"), 300);
+    /* ⭐ 來訊震動只在第一行 */
+    if (index === 0) {
+        const pager = document.querySelector(".pager");
+        pager.classList.add("shake");
+        setTimeout(() => pager.classList.remove("shake"), 300);
+    }
 
     requestAnimationFrame(slideInStep);
 }
