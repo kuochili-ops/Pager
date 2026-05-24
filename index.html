@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call – 自動錄影整合版</title>
+<title>BB Call – 自動錄影（手動存檔）版</title>
 
 <style>
 body {
@@ -324,7 +324,7 @@ function slideOutStep() {
         index++;
 
         if (index < lines.length) showLine();
-        else stopRecording(); // ⭐ 自動錄影：訊息播完 → 停止錄影
+        else stopRecording(); // ⭐ 訊息播完 → 停止錄影（不自動下載）
 
     } else requestAnimationFrame(slideOutStep);
 }
@@ -357,7 +357,7 @@ document.getElementById("sendBtn").onclick = () => {
 };
 
 /* ============================================================
-   ⭐ 自動錄影整合
+   ⭐ 自動錄影（手動存檔）
    ============================================================ */
 let recorder;
 let recordedChunks = [];
@@ -374,10 +374,25 @@ function startRecording() {
         const blob = new Blob(recordedChunks, { type: "video/webm" });
         const url = URL.createObjectURL(blob);
 
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "bbcall_message.webm";
-        a.click();
+        // ⭐ 顯示手動下載按鈕
+        const dlBtn = document.createElement("button");
+        dlBtn.textContent = "下載錄影";
+        dlBtn.style.marginTop = "10px";
+        dlBtn.style.padding = "10px 14px";
+        dlBtn.style.background = "#e91e63";
+        dlBtn.style.color = "white";
+        dlBtn.style.border = "none";
+        dlBtn.style.borderRadius = "6px";
+        dlBtn.style.cursor = "pointer";
+
+        dlBtn.onclick = () => {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "bbcall_message.webm";
+            a.click();
+        };
+
+        document.body.appendChild(dlBtn);
     };
 
     recorder.start();
