@@ -24,11 +24,24 @@ button { padding:10px 12px; border:none; border-radius:6px; color:#fff; }
     padding:14px; box-sizing:border-box; position:relative;
     box-shadow:inset 0 0 10px #000, 0 0 0 3px #444;
 }
+
+/* ⭐ 修正：螢幕高度固定 140px（不再裁掉 Canvas） */
 .screen {
-    width:100%; height:60%; background:#021a02; border:3px solid #0f3d0f;
-    border-radius:8px; position:relative; overflow:hidden;
+    width:100%;
+    height:140px;     /* ← 這行是關鍵修正 */
+    background:#021a02;
+    border:3px solid #0f3d0f;
+    border-radius:8px;
+    position:relative;
+    overflow:hidden;
 }
-#screenCanvas { width:100%; height:100%; display:block; image-rendering:pixelated; }
+
+#screenCanvas {
+    width:100%;
+    height:100%;
+    display:block;
+    image-rendering:pixelated;
+}
 
 .rec-indicator {
     position:absolute; top:4px; left:8px; color:#ff3b3b; font-size:12px;
