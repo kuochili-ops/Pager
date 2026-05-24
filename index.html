@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call – 正面按鍵 + 分享鍵 + 白名牌版 (高畫質錄影版)</title>
+<title>BB Call – 全畫布高畫質錄影版</title>
 
 <style>
 body {
@@ -20,129 +20,20 @@ button {
     padding:10px 12px; border:none; border-radius:6px;
     color:#fff; background:#4caf50; cursor:pointer;
 }
+.share-btn { background:#2196f3; }
 
-/* ====== 分享鍵 ====== */
-.share-btn {
-    background:#2196f3;
+/* ====== 顯示與錄影 Canvas ====== */
+.canvas-container {
+    position: relative;
+    width: 500px;
+    height: 500px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
-
-/* ====== 機身 ====== */
-.pager {
-    width:360px; height:300px;
-    background:#1b1b1b;
-    border-radius:20px;
-    padding:14px;
-    box-sizing:border-box;
-    position:relative;
-    box-shadow:
-        inset 0 0 10px #000,
-        0 0 0 3px #444,
-        0 0 20px #000;
-    transition:transform 0.1s;
-}
-
-/* ====== 正面按鍵區 ====== */
-.front-buttons {
-    position:absolute;
-    bottom:20px;
-    left:50%;
-    transform:translateX(-50%);
-    width:260px;
-    display:flex;
-    justify-content:space-between;
-}
-
-.btn-front {
-    width:32px;
-    height:32px;
-    background:#2a2a2a;
-    border-radius:50%;
-    box-shadow:
-        0 0 4px #000,
-        inset 0 0 6px #555;
-    transition:0.1s;
-}
-
-.btn-front:active {
-    transform:scale(0.92);
-    box-shadow:
-        0 0 2px #000,
-        inset 0 0 3px #777;
-}
-
-/* ====== 分享鍵（放在按鍵區右側） ====== */
-.share-front {
-    width:60px;
-    height:32px;
-    background:#2196f3;
-    border-radius:8px;
-    color:white;
-    font-size:14px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    box-shadow:0 0 4px #000, inset 0 0 4px #555;
-    cursor:pointer;
-}
-
-/* ====== 顯示區 ====== */
-.screen {
-    width:100%;
-    height:140px;
-    background:#021a02;
-    border:3px solid #0f3d0f;
-    border-radius:8px;
-    position:relative;
-    overflow:hidden;
-    box-shadow:inset 0 0 12px #000;
-}
-
-/* ====== 顯示區內狀態列 ====== */
-.status-inside {
-    position:absolute;
-    top:2px;
-    left:0;
-    width:100%;
-    height:20px;
-    color:#7aff7a;
-    font-size:13px;
-    display:flex;
-    justify-content:space-between;
-    padding:0 6px;
-    font-weight:bold;
-    pointer-events:none;
-    z-index: 10; /* 確保在畫布上方 */
-}
-
-/* ====== 顯示區外沿名牌（白色） ====== */
-.nameplate {
-    position:absolute;
-    bottom:-22px;
-    left:10px;
-    color:#ffffff;
-    font-size:14px;
-    opacity:0.95;
-    text-shadow:0 0 4px #fff;
-}
-
-/* ====== 機殼名牌（白色） ====== */
-.shell-nameplate {
-    position:absolute;
-    bottom:60px;
-    left:50%;
-    transform:translateX(-50%);
-    color:#ffffff;
-    font-size:16px;
-    font-weight:bold;
-    opacity:0.95;
-    text-shadow:0 0 4px #fff;
-}
-
-/* 🌟 修改點：移除 pixelated，改用正常渲染 */
 #screenCanvas {
-    width:100%;
-    height:100%;
-    display:block;
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: #0d0d0d;
 }
 
 /* ====== 錄影狀態提示燈 ====== */
@@ -159,21 +50,7 @@ button {
     animation: blink 1s infinite;
     z-index: 999;
 }
-@keyframes blink {
-    50% { opacity: 0.3; }
-}
-
-/* ====== 來訊震動 ====== */
-.pager.shake {
-    animation: shake 0.3s ease;
-}
-@keyframes shake {
-    0%   { transform: translateX(0); }
-    25%  { transform: translateX(-3px); }
-    50%  { transform: translateX(3px); }
-    75%  { transform: translateX(-3px); }
-    100% { transform: translateX(0); }
-}
+@keyframes blink { 50% { opacity: 0.3; } }
 </style>
 </head>
 
@@ -183,32 +60,12 @@ button {
 
 <div class="input-area">
   <textarea id="msgInput"></textarea>
-  <button id="sendBtn">送出</button>
-  <button class="share-btn" id="shareBtn">分享</button>
+  <button id="sendBtn">送出並錄影</button>
+  <button class="share-btn" id="shareBtn">分享連結</button>
 </div>
 
-<div class="pager">
-  <div class="shell-nameplate">𓃥 白六 CALL</div>
-
-  <div class="screen">
-    <div class="status-inside">
-        <div>SIG ▂▄▆█</div>
-        <div>VIB ≈≈   MSG ✉</div>
-        <div>BAT [▮▮▯]</div>
-    </div>
-
-    <canvas id="screenCanvas" width="1080" height="420"></canvas>
-
-    <div class="nameplate">𓃥 白六 CALL</div>
-  </div>
-
-  <div class="front-buttons">
-      <div class="btn-front"></div>
-      <div class="btn-front"></div>
-      <div class="btn-front"></div>
-      <div class="btn-front"></div>
-      <div class="share-front" id="shareFrontBtn">分享</div>
-  </div>
+<div class="canvas-container">
+    <canvas id="screenCanvas" width="1080" height="1080"></canvas>
 </div>
 
 <script>
@@ -217,24 +74,16 @@ const canvas = document.getElementById("screenCanvas");
 const ctx = canvas.getContext("2d");
 const W = canvas.width, H = canvas.height;
 
-// 🌟 修改點：因為畫布變大 3 倍，字體、發光、間距也同步放大 3 倍
-ctx.font = "132px 'Courier New'"; 
-ctx.fillStyle = "#b9ffb9";
-ctx.textBaseline = "top";
-ctx.shadowColor = "#b9ffb9";
-ctx.shadowBlur = 18; 
-
-/* ===== BB Call 節奏 (配合高解析度等比例放大速度) ===== */
-const HOLD = 120;
+/* ===== BB Call 動態參數 (基於 1080p 等比放大) ===== */
 const SLIDE_SPEED = 0.08;
 const MARQUEE_DELAY = 30;
-const MARQUEE_SPEED = 1.8; // 🌟 速度同步乘以 3 保持體感速度一致
+const MARQUEE_SPEED = 5.0; // 加快滾動速度契合大解析度
 
-/* ===== 狀態 ===== */
+/* ===== 狀態變數 ===== */
 let lines = [];
 let index = 0;
 let currentText = "";
-let scrollX = 30; // 🌟 初始邊距乘以 3
+let scrollX = 210; // 文字滾動起始 X 座標（對應綠色螢幕內部）
 
 let marqueeDelay = 0;
 let marqueeFinished = false;
@@ -242,37 +91,177 @@ let marqueeHold = 0;
 
 let slidingIn = false;
 let slidingOut = false;
-
 let slideInProgress = 0;
 let slideOutProgress = 0;
+
+// 機身震動效果變數
+let shakeOffset = { x: 0, y: 0 };
+let isShaking = false;
+let shakeTimer = 0;
 
 /* ===== 🎦 錄影相關變數 ===== */
 let mediaRecorder;
 let recordedChunks = [];
 let isRecording = false;
 
-/* ===== 主畫面繪製 ===== */
-function drawScreen() {
-    ctx.clearRect(0,0,W,H);
+/* ===== 核心繪製邏輯：把機身、螢幕、文字全畫進去 ===== */
+function renderAll() {
+    ctx.clearRect(0, 0, W, H);
+    
+    ctx.save();
+    // 應用來訊震動偏移
+    if (isShaking) {
+        ctx.translate(shakeOffset.x, shakeOffset.y);
+    }
 
-    let y = 150; // 🌟 避開狀態列的 Y 軸位置乘以 3
+    // 1. 繪製 Pager 機身外殼 (外圍大黑色圓角矩形)
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = 40;
+    ctx.fillStyle = "#1b1b1b";
+    drawRoundedRect(ctx, 140, 190, 800, 700, 50); 
+    ctx.shadowBlur = 0; // 關閉陰影防重疊
 
-    if (slidingIn) y += (1 - slideInProgress) * 120;  // 🌟 移動距離乘以 3
-    if (slidingOut) y -= slideOutProgress * 120;
+    // 機身外殼邊框線
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 8;
+    ctx.stroke();
 
-    ctx.fillText(currentText, scrollX, y);
+    // 2. 繪製機殼名牌「𓃥 白六 CALL」
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 42px 'Courier New', monospace";
+    ctx.textAlign = "center";
+    ctx.shadowColor = "#ffffff";
+    ctx.shadowBlur = 10;
+    ctx.fillText("𓃥 白六 CALL", 540, 720);
+    ctx.shadowBlur = 0;
+
+    // 3. 繪製綠色螢幕外框與內域
+    // 外框
+    ctx.strokeStyle = "#0f3d0f";
+    ctx.lineWidth = 8;
+    ctx.fillStyle = "#021a02";
+    drawRoundedRect(ctx, 180, 230, 720, 360, 20);
+    ctx.stroke();
+
+    // 4. 繪製螢幕內狀態列 (SIG, VIB, BAT)
+    ctx.fillStyle = "#7aff7a";
+    ctx.font = "bold 32px 'Courier New', monospace";
+    ctx.textAlign = "left";
+    ctx.fillText("SIG ▂▄▆█", 210, 255);
+    ctx.textAlign = "center";
+    ctx.fillText("VIB ≈≈   MSG ✉", 540, 255);
+    ctx.textAlign = "right";
+    ctx.fillText("BAT [▮▮▯]", 870, 255);
+
+    // 5. 繪製滾動文字 (裁剪範圍，防止字體超出綠色螢幕框)
+    ctx.save();
+    // 建立剪裁區域 (限縮在螢幕內)
+    ctx.beginPath();
+    ctx.rect(200, 300, 680, 260);
+    ctx.clip();
+
+    // 設定霓虹綠文字發光
+    ctx.fillStyle = "#b9ffb9";
+    ctx.font = "110px 'Courier New', monospace";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.shadowColor = "#b9ffb9";
+    ctx.shadowBlur = 20;
+
+    // 計算上下滑動動畫 Y 軸位置
+    let textY = 380; 
+    if (slidingIn) textY += (1 - slideInProgress) * 120;
+    if (slidingOut) textY -= slideOutProgress * 120;
+
+    ctx.fillText(currentText, scrollX, textY);
+    ctx.restore(); // 解除裁剪
+
+    // 6. 繪製螢幕下沿外邊名牌
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "32px 'Courier New', monospace";
+    ctx.textAlign = "left";
+    ctx.shadowColor = "#ffffff";
+    ctx.shadowBlur = 8;
+    ctx.fillText("𓃥 白六 CALL", 200, 625);
+    ctx.shadowBlur = 0;
+
+    // 7. 繪製正面按鍵區 (4個圓形按鍵 + 1個長方形分享鍵)
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    
+    // 4 個圓形按鍵
+    const btnY = 820;
+    const btnXPositions = [260, 360, 460, 560];
+    ctx.fillStyle = "#2a2a2a";
+    ctx.strokeStyle = "#555";
+    ctx.lineWidth = 4;
+    btnXPositions.forEach(bx => {
+        ctx.beginPath();
+        ctx.arc(bx, btnY, 36, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+    });
+
+    // 藍色分享按鍵
+    ctx.fillStyle = "#2196f3";
+    ctx.strokeStyle = "#1976d2";
+    drawRoundedRect(ctx, 680, btnY - 36, 160, 72, 16);
+    ctx.fill();
+    ctx.stroke();
+    
+    // 分享鍵文字
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 32px sans-serif";
+    ctx.fillText("分享", 760, btnY + 4);
+
+    ctx.restore();
+}
+
+// 圓角矩形輔助函式
+function drawRoundedRect(cx, x, y, width, height, radius) {
+    cx.beginPath();
+    cx.moveTo(x + radius, y);
+    cx.lineTo(x + width - radius, y);
+    cx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    cx.lineTo(x + width, y + height - radius);
+    cx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    cx.lineTo(x + radius, y + height);
+    cx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    cx.lineTo(x, y + radius);
+    cx.quadraticCurveTo(x, y, x + radius, y);
+    cx.closePath();
+}
+
+/* ===== 震動動畫邏輯 ===== */
+function triggerShake() {
+    isShaking = true;
+    shakeTimer = 18; // 震動持續影格數
+}
+
+function updateShake() {
+    if (!isShaking) return;
+    if (shakeTimer > 0) {
+        // 隨機產生 -8 到 8 像素的位移
+        shakeOffset.x = (Math.random() - 0.5) * 16;
+        shakeOffset.y = (Math.random() - 0.5) * 16;
+        shakeTimer--;
+    } else {
+        isShaking = false;
+        shakeOffset = { x: 0, y: 0 };
+    }
 }
 
 /* ===== 動畫主迴圈 ===== */
 function animate() {
     requestAnimationFrame(animate);
+    updateShake();
 
     if (!slidingIn && !slidingOut && slideInProgress === 1 && slideOutProgress === 0) {
-
+        ctx.font = "110px 'Courier New', monospace"; // 確保量測寬度正確
         const w = ctx.measureText(currentText).width;
+        const maxW = 660; // 綠色框內部可用寬度
 
-        // 🌟 判斷邊界等比例乘以 3
-        if (w <= W - 60 && !marqueeFinished) {
+        if (w <= maxW && !marqueeFinished) {
             marqueeFinished = true;
             marqueeHold = 60;
         }
@@ -280,17 +269,13 @@ function animate() {
         if (marqueeFinished) {
             if (marqueeHold > 0) {
                 marqueeHold--;
-                drawScreen();
+                renderAll();
                 return;
             } else {
-
                 if (index === lines.length - 1) {
-                    if (isRecording) {
-                        stopRecordingAndDownload();
-                    }
+                    if (isRecording) stopRecordingAndDownload();
                     return;
                 }
-
                 slidingOut = true;
                 slideOutProgress = 0;
                 marqueeFinished = false;
@@ -301,10 +286,9 @@ function animate() {
 
         if (marqueeDelay > 0) marqueeDelay--;
         else {
-            if (w > W - 60) {
+            if (w > maxW) {
                 scrollX -= MARQUEE_SPEED;
-
-                if (scrollX < -(w - (W - 60))) {
+                if (scrollX < 210 - (w - maxW)) {
                     marqueeFinished = true;
                     marqueeHold = 60;
                 }
@@ -312,8 +296,10 @@ function animate() {
         }
     }
 
-    drawScreen();
+    renderAll();
 }
+
+// 啟動首次渲染
 animate();
 
 /* ===== 顯示下一行 ===== */
@@ -321,7 +307,7 @@ function showLine() {
     if (index >= lines.length) return;
 
     currentText = lines[index];
-    scrollX = 30; // 🌟 乘以 3
+    scrollX = 210; // 重設回螢幕左側起始點
 
     marqueeDelay = MARQUEE_DELAY;
     marqueeFinished = false;
@@ -329,14 +315,11 @@ function showLine() {
 
     slidingIn = true;
     slidingOut = false;
-
     slideInProgress = 0;
     slideOutProgress = 0;
 
     if (index === 0) {
-        const pager = document.querySelector(".pager");
-        pager.classList.add("shake");
-        setTimeout(() => pager.classList.remove("shake"), 300);
+        triggerShake();
     }
 
     requestAnimationFrame(slideInStep);
@@ -344,7 +327,6 @@ function showLine() {
 
 function slideInStep() {
     slideInProgress += SLIDE_SPEED;
-
     if (slideInProgress >= 1) {
         slidingIn = false;
         slideInProgress = 1;
@@ -353,37 +335,29 @@ function slideInStep() {
 
 function slideOutStep() {
     slideOutProgress += SLIDE_SPEED;
-
     if (slideOutProgress >= 1) {
         slidingOut = false;
         slideOutProgress = 1;
-
         index++;
-
-        if (index < lines.length) {
-            showLine();
-        }
-
+        if (index < lines.length) showLine();
     } else requestAnimationFrame(slideOutStep);
 }
 
-/* ===== 🎦 自動錄影與存檔核心函式 ===== */
+/* ===== 🎦 自動錄影與存檔核心 ===== */
 function startRecording() {
     if (isRecording) return; 
-    
     recordedChunks = [];
+    
+    // 擷取整張 1080x1080 畫布，30 FPS
     const stream = canvas.captureStream(30); 
     
-    // 🌟 這裡提高錄影的碼率 (Bits Per Second) 確保影片不會有大範圍的黑邊失真
     mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 2500000 // 2.5 Mbps
+        videoBitsPerSecond: 5000000 // 提高至 5 Mbps，確保外觀細節與發光字體極度清晰
     });
 
     mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-            recordedChunks.push(event.data);
-        }
+        if (event.data.size > 0) recordedChunks.push(event.data);
     };
 
     mediaRecorder.onstop = () => {
@@ -392,7 +366,7 @@ function startRecording() {
         
         const a = document.createElement('a');
         a.href = url;
-        a.download = `bbcall-${Date.now()}.webm`;
+        a.download = `bbcall-full-${Date.now()}.webm`;
         document.body.appendChild(a);
         a.click();
         
@@ -416,27 +390,27 @@ function stopRecordingAndDownload() {
     }
 }
 
-/* ===== 分享鍵（上方） ===== */
+/* ===== 分享鍵與送出邏輯 ===== */
 document.getElementById("shareBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     const url = location.href.split("?")[0];
     const shareText = `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
-
     navigator.clipboard.writeText(shareText);
     alert("已複製分享連結！");
 };
 
-/* ===== 分享鍵（正面按鍵區） ===== */
-document.getElementById("shareFrontBtn").onclick = () => {
-    const msg = document.getElementById("msgInput").value.trim();
-    const url = location.href.split("?")[0];
-    const shareText = `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
-
-    navigator.clipboard.writeText(shareText);
-    alert("已複製分享連結！");
+// 監聽點擊 Canvas 內部藍色按鈕的位置來觸發分享
+canvas.onclick = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const clickX = (e.clientX - rect.left) * (W / rect.width);
+    const clickY = (e.clientY - rect.top) * (H / rect.height);
+    
+    // 判斷是否點在 Canvas 的分享鍵範圍內 (X: 680~840, Y: 784~856)
+    if (clickX >= 680 && clickX <= 840 && clickY >= 784 && clickY <= 856) {
+        document.getElementById("shareBtn").click();
+    }
 };
 
-/* ===== 送出 ===== */
 document.getElementById("sendBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     if (!msg) return;
@@ -451,13 +425,11 @@ document.getElementById("sendBtn").onclick = () => {
 const params = new URLSearchParams(location.search);
 if (params.get("clean") === "1") {
     document.querySelector(".input-area").style.display = "none";
-    document.querySelector(".front-buttons").style.display = "none";
 
     const urlMsg = params.get("msg");
     if (urlMsg) {
         lines = urlMsg.split("\n");
         index = 0;
-        
         setTimeout(() => {
             startRecording();
             showLine();
