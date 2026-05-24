@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call – 全畫布高畫質錄影版</title>
+<title>BB Call – 全畫布清晰錄影版</title>
 
 <style>
 body {
@@ -74,16 +74,16 @@ const canvas = document.getElementById("screenCanvas");
 const ctx = canvas.getContext("2d");
 const W = canvas.width, H = canvas.height;
 
-/* ===== BB Call 動態參數 (基於 1080p 等比放大) ===== */
+/* ===== BB Call 動態參數 ===== */
 const SLIDE_SPEED = 0.08;
 const MARQUEE_DELAY = 30;
-const MARQUEE_SPEED = 5.0; // 加快滾動速度契合大解析度
+const MARQUEE_SPEED = 5.5; 
 
 /* ===== 狀態變數 ===== */
 let lines = [];
 let index = 0;
 let currentText = "";
-let scrollX = 210; // 文字滾動起始 X 座標（對應綠色螢幕內部）
+let scrollX = 210; 
 
 let marqueeDelay = 0;
 let marqueeFinished = false;
@@ -94,7 +94,6 @@ let slidingOut = false;
 let slideInProgress = 0;
 let slideOutProgress = 0;
 
-// 機身震動效果變數
 let shakeOffset = { x: 0, y: 0 };
 let isShaking = false;
 let shakeTimer = 0;
@@ -104,48 +103,45 @@ let mediaRecorder;
 let recordedChunks = [];
 let isRecording = false;
 
-/* ===== 核心繪製邏輯：把機身、螢幕、文字全畫進去 ===== */
+/* ===== 核心繪製邏輯 ===== */
 function renderAll() {
+    // 🌟 每次重繪前，必須百分之百清空畫布，防範任何發光光暈殘留
     ctx.clearRect(0, 0, W, H);
     
     ctx.save();
-    // 應用來訊震動偏移
     if (isShaking) {
         ctx.translate(shakeOffset.x, shakeOffset.y);
     }
 
-    // 1. 繪製 Pager 機身外殼 (外圍大黑色圓角矩形)
-    ctx.shadowColor = "rgba(0,0,0,0.6)";
-    ctx.shadowBlur = 40;
+    // 🌟 先確保所有陰影全關，繪製乾淨的機身外殼
+    ctx.shadowBlur = 0; 
+    ctx.shadowColor = "transparent";
+
+    // 1. 繪製 Pager 機身外殼
     ctx.fillStyle = "#1b1b1b";
     drawRoundedRect(ctx, 140, 190, 800, 700, 50); 
-    ctx.shadowBlur = 0; // 關閉陰影防重疊
-
-    // 機身外殼邊框線
+    ctx.fill();
     ctx.strokeStyle = "#444";
     ctx.lineWidth = 8;
     ctx.stroke();
 
-    // 2. 繪製機殼名牌「𓃥 白六 CALL」
+    // 2. 繪製機殼名牌
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 42px 'Courier New', monospace";
+    ctx.font = "bold 42px monospace";
     ctx.textAlign = "center";
-    ctx.shadowColor = "#ffffff";
-    ctx.shadowBlur = 10;
     ctx.fillText("𓃥 白六 CALL", 540, 720);
-    ctx.shadowBlur = 0;
 
-    // 3. 繪製綠色螢幕外框與內域
-    // 外框
+    // 3. 繪製螢幕框與內域
     ctx.strokeStyle = "#0f3d0f";
     ctx.lineWidth = 8;
     ctx.fillStyle = "#021a02";
     drawRoundedRect(ctx, 180, 230, 720, 360, 20);
+    ctx.fill();
     ctx.stroke();
 
-    // 4. 繪製螢幕內狀態列 (SIG, VIB, BAT)
+    // 4. 繪製螢幕內狀態列
     ctx.fillStyle = "#7aff7a";
-    ctx.font = "bold 32px 'Courier New', monospace";
+    ctx.font = "bold 32px monospace";
     ctx.textAlign = "left";
     ctx.fillText("SIG ▂▄▆█", 210, 255);
     ctx.textAlign = "center";
@@ -153,43 +149,43 @@ function renderAll() {
     ctx.textAlign = "right";
     ctx.fillText("BAT [▮▮▯]", 870, 255);
 
-    // 5. 繪製滾動文字 (裁剪範圍，防止字體超出綠色螢幕框)
+    // 5. 🌟 繪製滾動文字
     ctx.save();
-    // 建立剪裁區域 (限縮在螢幕內)
+    // 建立螢幕剪裁區域
     ctx.beginPath();
     ctx.rect(200, 300, 680, 260);
     ctx.clip();
 
-    // 設定霓虹綠文字發光
+    // 🌟 修正點：調小發光半徑（4px），更換中文字體渲染更乾淨的 'Microsoft JhengHei', sans-serif
     ctx.fillStyle = "#b9ffb9";
-    ctx.font = "110px 'Courier New', monospace";
+    ctx.font = "500 96px 'Courier New', 'Microsoft JhengHei', monospace, sans-serif";
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
+    
+    // 設定輕微的呼吸發光，不讓綠光炸開
     ctx.shadowColor = "#b9ffb9";
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = 4; 
 
-    // 計算上下滑動動畫 Y 軸位置
     let textY = 380; 
     if (slidingIn) textY += (1 - slideInProgress) * 120;
     if (slidingOut) textY -= slideOutProgress * 120;
 
     ctx.fillText(currentText, scrollX, textY);
-    ctx.restore(); // 解除裁剪
+    ctx.restore(); // 🌟 解除裁剪並自動重設文字發光
 
-    // 6. 繪製螢幕下沿外邊名牌
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "32px 'Courier New', monospace";
-    ctx.textAlign = "left";
-    ctx.shadowColor = "#ffffff";
-    ctx.shadowBlur = 8;
-    ctx.fillText("𓃥 白六 CALL", 200, 625);
+    // 6. 🌟 繪製外邊名牌前，把發光關掉，確保名牌字體邊緣銳利
     ctx.shadowBlur = 0;
+    ctx.shadowColor = "transparent";
+    
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "32px monospace";
+    ctx.textAlign = "left";
+    ctx.fillText("𓃥 白六 CALL", 200, 625);
 
-    // 7. 繪製正面按鍵區 (4個圓形按鍵 + 1個長方形分享鍵)
+    // 7. 繪製正面按鍵區
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     
-    // 4 個圓形按鍵
     const btnY = 820;
     const btnXPositions = [260, 360, 460, 560];
     ctx.fillStyle = "#2a2a2a";
@@ -209,7 +205,6 @@ function renderAll() {
     ctx.fill();
     ctx.stroke();
     
-    // 分享鍵文字
     ctx.fillStyle = "#ffffff";
     ctx.font = "bold 32px sans-serif";
     ctx.fillText("分享", 760, btnY + 4);
@@ -217,7 +212,6 @@ function renderAll() {
     ctx.restore();
 }
 
-// 圓角矩形輔助函式
 function drawRoundedRect(cx, x, y, width, height, radius) {
     cx.beginPath();
     cx.moveTo(x + radius, y);
@@ -235,13 +229,12 @@ function drawRoundedRect(cx, x, y, width, height, radius) {
 /* ===== 震動動畫邏輯 ===== */
 function triggerShake() {
     isShaking = true;
-    shakeTimer = 18; // 震動持續影格數
+    shakeTimer = 18;
 }
 
 function updateShake() {
     if (!isShaking) return;
     if (shakeTimer > 0) {
-        // 隨機產生 -8 到 8 像素的位移
         shakeOffset.x = (Math.random() - 0.5) * 16;
         shakeOffset.y = (Math.random() - 0.5) * 16;
         shakeTimer--;
@@ -257,9 +250,9 @@ function animate() {
     updateShake();
 
     if (!slidingIn && !slidingOut && slideInProgress === 1 && slideOutProgress === 0) {
-        ctx.font = "110px 'Courier New', monospace"; // 確保量測寬度正確
+        ctx.font = "500 96px 'Courier New', 'Microsoft JhengHei', monospace"; 
         const w = ctx.measureText(currentText).width;
-        const maxW = 660; // 綠色框內部可用寬度
+        const maxW = 660; 
 
         if (w <= maxW && !marqueeFinished) {
             marqueeFinished = true;
@@ -299,7 +292,6 @@ function animate() {
     renderAll();
 }
 
-// 啟動首次渲染
 animate();
 
 /* ===== 顯示下一行 ===== */
@@ -307,7 +299,7 @@ function showLine() {
     if (index >= lines.length) return;
 
     currentText = lines[index];
-    scrollX = 210; // 重設回螢幕左側起始點
+    scrollX = 210; 
 
     marqueeDelay = MARQUEE_DELAY;
     marqueeFinished = false;
@@ -348,12 +340,11 @@ function startRecording() {
     if (isRecording) return; 
     recordedChunks = [];
     
-    // 擷取整張 1080x1080 畫布，30 FPS
     const stream = canvas.captureStream(30); 
     
     mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9',
-        videoBitsPerSecond: 5000000 // 提高至 5 Mbps，確保外觀細節與發光字體極度清晰
+        videoBitsPerSecond: 6000000 // 6 Mbps 高碼率
     });
 
     mediaRecorder.ondataavailable = (event) => {
@@ -366,7 +357,7 @@ function startRecording() {
         
         const a = document.createElement('a');
         a.href = url;
-        a.download = `bbcall-full-${Date.now()}.webm`;
+        a.download = `bbcall-clear-${Date.now()}.webm`;
         document.body.appendChild(a);
         a.click();
         
@@ -399,13 +390,11 @@ document.getElementById("shareBtn").onclick = () => {
     alert("已複製分享連結！");
 };
 
-// 監聽點擊 Canvas 內部藍色按鈕的位置來觸發分享
 canvas.onclick = (e) => {
     const rect = canvas.getBoundingClientRect();
     const clickX = (e.clientX - rect.left) * (W / rect.width);
     const clickY = (e.clientY - rect.top) * (H / rect.height);
     
-    // 判斷是否點在 Canvas 的分享鍵範圍內 (X: 680~840, Y: 784~856)
     if (clickX >= 680 && clickX <= 840 && clickY >= 784 && clickY <= 856) {
         document.getElementById("shareBtn").click();
     }
