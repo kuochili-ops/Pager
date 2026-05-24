@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call – 恢復版</title>
+<title>BB Call – 可換行穩定版</title>
 
 <style>
 body {
@@ -14,10 +14,7 @@ textarea {
     width:240px; height:120px; background:#1a1a1a; color:#eee;
     border:1px solid #555; border-radius:6px; padding:10px; resize:none;
 }
-button { padding:10px 12px; border:none; border-radius:6px; color:#fff; }
-#sendBtn { background:#4caf50; }
-#recordBtn { background:#ff9800; }
-#shareBtn { background:#2196f3; }
+button { padding:10px 12px; border:none; border-radius:6px; color:#fff; background:#4caf50; }
 
 .pager {
     width:360px; height:260px; background:#1b1b1b; border-radius:20px;
@@ -25,10 +22,9 @@ button { padding:10px 12px; border:none; border-radius:6px; color:#fff; }
     box-shadow:inset 0 0 10px #000, 0 0 0 3px #444;
 }
 
-/* ⭐ 修正：螢幕高度固定 140px（不再裁掉 Canvas） */
 .screen {
     width:100%;
-    height:140px;     /* ← 這行是關鍵修正 */
+    height:140px;
     background:#021a02;
     border:3px solid #0f3d0f;
     border-radius:8px;
@@ -42,19 +38,6 @@ button { padding:10px 12px; border:none; border-radius:6px; color:#fff; }
     display:block;
     image-rendering:pixelated;
 }
-
-.rec-indicator {
-    position:absolute; top:4px; left:8px; color:#ff3b3b; font-size:12px;
-    opacity:0; font-weight:bold; text-shadow:0 0 4px #ff3b3b;
-}
-.rec-on { animation:recBlink 0.8s infinite; }
-@keyframes recBlink { 0%{opacity:1;} 50%{opacity:0.2;} 100%{opacity:1;} }
-
-#recordDoneBox {
-    position:fixed; top:20px; left:50%; transform:translateX(-50%);
-    background:rgba(0,0,0,0.85); padding:20px; border-radius:10px;
-    color:#fff; display:none;
-}
 </style>
 </head>
 
@@ -63,20 +46,12 @@ button { padding:10px 12px; border:none; border-radius:6px; color:#fff; }
 <div class="input-area">
   <textarea id="msgInput"></textarea>
   <button id="sendBtn">送出</button>
-  <button id="recordBtn">錄影</button>
-  <button id="shareBtn">分享</button>
 </div>
 
-<div class="pager" id="pager">
+<div class="pager">
   <div class="screen">
-    <div id="recDot" class="rec-indicator">REC ●</div>
     <canvas id="screenCanvas" width="360" height="140"></canvas>
   </div>
-</div>
-
-<div id="recordDoneBox">
-  <div>錄影完成！</div>
-  <button id="downloadBtn">下載影片</button>
 </div>
 
 <script>
@@ -91,9 +66,9 @@ ctx.textBaseline = "top";
 ctx.shadowColor = "#b9ffb9";
 ctx.shadowBlur = 6;
 
-/* ===== 原始 BB Call 節奏 ===== */
-const HOLD = 60;               // 停留 1 秒
-const SLIDE_SPEED = 0.08;      // 原本的滑動速度
+/* ===== BB Call 節奏 ===== */
+const HOLD = 120;              // 停留 2 秒
+const SLIDE_SPEED = 0.08;
 const MARQUEE_DELAY = 30;      // 跑馬燈延遲 0.5 秒
 const MARQUEE_SPEED = 0.6;
 
@@ -102,45 +77,65 @@ let lines = [];
 let index = 0;
 let currentText = "";
 let scrollX = 10;
+
 let marqueeDelay = 0;
+let marqueeFinished = false;
+let marqueeHold = 0;
 
 let slidingIn = false;
 let slidingOut = false;
-let slideProgress = 0;
 
-let backlight = 0;
-let backlightFade = 0.015;
+let slideInProgress = 0;
+let slideOutProgress = 0;
 
 /* ===== 主畫面繪製 ===== */
 function drawScreen() {
     ctx.clearRect(0,0,W,H);
 
-    let y = 40; // ⭐ 原本的顯示位置（你最早的版本）
+    let y = 40;
 
-    if (slidingIn)  y += (1 - slideProgress) * 40;
-    if (slidingOut) y -= slideProgress * 40;
+    if (slidingIn) y += (1 - slideInProgress) * 40;
+    if (slidingOut) y -= slideOutProgress * 40;
 
     ctx.fillText(currentText, scrollX, y);
-
-    if (backlight > 0) {
-        ctx.fillStyle = `rgba(185,255,185,${backlight * 0.12})`;
-        ctx.fillRect(0,0,W,H);
-        backlight -= backlightFade;
-        if (backlight < 0) backlight = 0;
-    }
 }
 
 /* ===== 動畫主迴圈 ===== */
 function animate() {
     requestAnimationFrame(animate);
 
-    if (!slidingIn && !slidingOut) {
+    // ⭐ 跑馬燈只在完全靜止時啟動
+    if (!slidingIn && !slidingOut && slideInProgress === 1 && slideOutProgress === 0) {
+
+        // ⭐ 跑馬燈跑完後停 1 秒
+        if (marqueeFinished) {
+            if (marqueeHold > 0) {
+                marqueeHold--;
+                drawScreen();
+                return;
+            } else {
+                // ⭐ 停 1 秒後 → 直接滑出（保證換行）
+                slidingOut = true;
+                slideOutProgress = 0;
+                marqueeFinished = false;
+                requestAnimationFrame(slideOutStep);
+                return;
+            }
+        }
+
+        // ⭐ 跑馬燈延遲
         if (marqueeDelay > 0) marqueeDelay--;
         else {
             const w = ctx.measureText(currentText).width;
+
             if (w > W - 20) {
                 scrollX -= MARQUEE_SPEED;
-                if (scrollX < -(w - (W - 20))) scrollX = 10;
+
+                // ⭐ 跑馬燈跑完 → 停 1 秒
+                if (scrollX < -(w - (W - 20))) {
+                    marqueeFinished = true;
+                    marqueeHold = 60;   // 停 1 秒
+                }
             }
         }
     }
@@ -149,78 +144,45 @@ function animate() {
 }
 animate();
 
-/* ===== 顯示下一行（恢復版） ===== */
+/* ===== 顯示下一行 ===== */
 function showLine() {
     if (index >= lines.length) return;
 
     currentText = lines[index];
     scrollX = 10;
 
-    if (index === 0) backlight = 1;
     marqueeDelay = MARQUEE_DELAY;
+    marqueeFinished = false;
+    marqueeHold = 0;
 
     slidingIn = true;
     slidingOut = false;
-    slideProgress = 0;
 
-    function slideInStep() {
-        slideProgress += SLIDE_SPEED;
-        if (slideProgress >= 1) {
-            slidingIn = false;
-            slideProgress = 1;
-
-            setTimeout(() => {
-                slidingOut = true;
-                slideProgress = 0;
-                requestAnimationFrame(slideOutStep);
-            }, HOLD * 16);
-
-        } else requestAnimationFrame(slideInStep);
-    }
-
-    function slideOutStep() {
-        slideProgress += SLIDE_SPEED;
-        if (slideProgress >= 1) {
-            slidingOut = false;
-            slideProgress = 1;
-            index++;
-            showLine();
-        } else requestAnimationFrame(slideOutStep);
-    }
+    slideInProgress = 0;
+    slideOutProgress = 0;
 
     requestAnimationFrame(slideInStep);
 }
 
-/* ===== 錄影 ===== */
-let mediaRecorder, recordedChunks = [], isRecording = false;
+function slideInStep() {
+    slideInProgress += SLIDE_SPEED;
 
-function startRecording() {
-    if (isRecording) return;
-    recordedChunks = [];
-    const stream = canvas.captureStream(30);
-    mediaRecorder = new MediaRecorder(stream, { mimeType:"video/webm" });
-
-    mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
-    mediaRecorder.onstop = exportVideo;
-
-    mediaRecorder.start();
-    isRecording = true;
-    document.getElementById("recDot").classList.add("rec-on");
+    if (slideInProgress >= 1) {
+        slidingIn = false;
+        slideInProgress = 1;
+        // ⭐ 滑入完成後 → 等跑馬燈
+    } else requestAnimationFrame(slideInStep);
 }
 
-function stopRecording() {
-    if (!isRecording) return;
-    mediaRecorder.stop();
-    isRecording = false;
-    document.getElementById("recDot").classList.remove("rec-on");
-}
+function slideOutStep() {
+    slideOutProgress += SLIDE_SPEED;
 
-function exportVideo() {
-    const blob = new Blob(recordedChunks, { type:"video/webm" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "bbcall.webm"; a.click();
-    document.getElementById("recordDoneBox").style.display = "block";
+    if (slideOutProgress >= 1) {
+        slidingOut = false;
+        slideOutProgress = 1;
+        index++;
+        showLine();   // ⭐ 換行一定會發生
+    } else requestAnimationFrame(slideOutStep);
 }
 
 /* ===== 按鈕 ===== */
@@ -229,15 +191,6 @@ document.getElementById("sendBtn").onclick = () => {
     if (!msg) return;
     lines = msg.split("\n");
     index = 0;
-    showLine();
-};
-
-document.getElementById("recordBtn").onclick = () => {
-    const msg = document.getElementById("msgInput").value.trim();
-    if (!msg) return;
-    lines = msg.split("\n");
-    index = 0;
-    startRecording();
     showLine();
 };
 </script>
