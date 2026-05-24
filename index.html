@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call – 錄螢幕版</title>
+<title>BB Call – 正面按鍵 + 分享鍵 + 白名牌版 (自動錄影版)</title>
 
 <style>
 body {
@@ -20,8 +20,11 @@ button {
     padding:10px 12px; border:none; border-radius:6px;
     color:#fff; background:#4caf50; cursor:pointer;
 }
-.share-btn { background:#2196f3; }
-.record-mode-btn { background:#e91e63; }
+
+/* ====== 分享鍵 ====== */
+.share-btn {
+    background:#2196f3;
+}
 
 /* ====== 機身 ====== */
 .pager {
@@ -38,7 +41,7 @@ button {
     transition:transform 0.1s;
 }
 
-/* ====== 正面按鍵 ====== */
+/* ====== 正面按鍵區 ====== */
 .front-buttons {
     position:absolute;
     bottom:20px;
@@ -54,14 +57,20 @@ button {
     height:32px;
     background:#2a2a2a;
     border-radius:50%;
-    box-shadow:0 0 4px #000, inset 0 0 6px #555;
+    box-shadow:
+        0 0 4px #000,
+        inset 0 0 6px #555;
     transition:0.1s;
 }
+
 .btn-front:active {
     transform:scale(0.92);
-    box-shadow:0 0 2px #000, inset 0 0 3px #777;
+    box-shadow:
+        0 0 2px #000,
+        inset 0 0 3px #777;
 }
 
+/* ====== 分享鍵（放在按鍵區右側） ====== */
 .share-front {
     width:60px;
     height:32px;
@@ -104,7 +113,7 @@ button {
     pointer-events:none;
 }
 
-/* ====== 名牌 ====== */
+/* ====== 顯示區外沿名牌（白色） ====== */
 .nameplate {
     position:absolute;
     bottom:-22px;
@@ -115,6 +124,7 @@ button {
     text-shadow:0 0 4px #fff;
 }
 
+/* ====== 機殼名牌（白色） ====== */
 .shell-nameplate {
     position:absolute;
     bottom:60px;
@@ -134,7 +144,7 @@ button {
     image-rendering:pixelated;
 }
 
-/* ====== 震動 ====== */
+/* ====== 來訊震動 ====== */
 .pager.shake {
     animation: shake 0.3s ease;
 }
@@ -145,24 +155,46 @@ button {
     75%  { transform: translateX(-3px); }
     100% { transform: translateX(0); }
 }
+
+/* ====== 錄影狀態提示燈 ====== */
+.rec-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    display: none;
+    animation: blink 1s infinite;
+    z-index: 999;
+}
+@keyframes blink {
+    50% { opacity: 0.3; }
+}
 </style>
 </head>
 
 <body>
 
+<!-- 錄影狀態提示 -->
+<div id="recIndicator" class="rec-indicator">● REC AUTOMATIC</div>
+
 <div class="input-area">
   <textarea id="msgInput"></textarea>
   <button id="sendBtn">送出</button>
-  <button class="share-btn" id="shareBtn">分享連結</button>
-  <button class="record-mode-btn" id="recordModeBtn">錄影模式</button>
+  <button class="share-btn" id="shareBtn">分享</button>
 </div>
 
 <div class="pager">
 
+  <!-- 機殼名牌（白色） -->
   <div class="shell-nameplate">𓃥 白六 CALL</div>
 
   <div class="screen">
 
+    <!-- 顯示區內狀態列 -->
     <div class="status-inside">
         <div>SIG ▂▄▆█</div>
         <div>VIB ≈≈   MSG ✉</div>
@@ -171,14 +203,17 @@ button {
 
     <canvas id="screenCanvas" width="360" height="140"></canvas>
 
+    <!-- 顯示區外沿名牌（白色） -->
     <div class="nameplate">𓃥 白六 CALL</div>
   </div>
 
+  <!-- ⭐ 正面按鍵區 -->
   <div class="front-buttons">
       <div class="btn-front"></div>
       <div class="btn-front"></div>
       <div class="btn-front"></div>
       <div class="btn-front"></div>
+
       <div class="share-front" id="shareFrontBtn">分享</div>
   </div>
 
@@ -196,7 +231,8 @@ ctx.textBaseline = "top";
 ctx.shadowColor = "#b9ffb9";
 ctx.shadowBlur = 6;
 
-/* ===== 動畫節奏 ===== */
+/* ===== BB Call 節奏 ===== */
+const HOLD = 120;
 const SLIDE_SPEED = 0.08;
 const MARQUEE_DELAY = 30;
 const MARQUEE_SPEED = 0.6;
@@ -217,11 +253,16 @@ let slidingOut = false;
 let slideInProgress = 0;
 let slideOutProgress = 0;
 
+/* ===== 🎦 錄影相關變數 ===== */
+let mediaRecorder;
+let recordedChunks = [];
+let isRecording = false;
+
 /* ===== 主畫面繪製 ===== */
 function drawScreen() {
     ctx.clearRect(0,0,W,H);
 
-    let y = 50;
+    let y = 50; // 避開狀態列
 
     if (slidingIn) y += (1 - slideInProgress) * 40;
     if (slidingOut) y -= slideOutProgress * 40;
@@ -249,7 +290,11 @@ function animate() {
                 return;
             } else {
 
+                // 🌟 修改點：當所有訊息播完，停止錄影並存檔
                 if (index === lines.length - 1) {
+                    if (isRecording) {
+                        stopRecordingAndDownload();
+                    }
                     return;
                 }
 
@@ -295,7 +340,7 @@ function showLine() {
     slideInProgress = 0;
     slideOutProgress = 0;
 
-    /* ⭐ 震動只在第一行 */
+    /* ⭐ 來訊震動只在第一行 */
     if (index === 0) {
         const pager = document.querySelector(".pager");
         pager.classList.add("shake");
@@ -323,72 +368,116 @@ function slideOutStep() {
 
         index++;
 
-        if (index < lines.length) showLine();
+        if (index < lines.length) {
+            showLine();
+        }
 
     } else requestAnimationFrame(slideOutStep);
 }
 
-/* ===== 分享連結（乾淨模式） ===== */
-function makeCleanLink(msg) {
-    const url = location.href.split("?")[0];
-    return `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
+/* ===== 🎦 自動錄影與存檔核心函式 ===== */
+function startRecording() {
+    // 預防前一次錄影未正確結束
+    if (isRecording) return; 
+    
+    recordedChunks = [];
+    // 擷取 canvas 畫面，設定 30 FPS
+    const stream = canvas.captureStream(30); 
+    
+    // 設定錄影格式 (優先使用 webm，大多瀏覽器支援)
+    mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'video/webm;codecs=vp9'
+    });
+
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        
+        // 建立自動下載連結
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bbcall-${Date.now()}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // 清理記憶體
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+        
+        document.getElementById("recIndicator").style.display = "none";
+        isRecording = false;
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+    document.getElementById("recIndicator").style.display = "block";
 }
 
+function stopRecordingAndDownload() {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+    }
+}
+
+/* ===== 分享鍵（上方） ===== */
 document.getElementById("shareBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
-    if (!msg) return;
-    navigator.clipboard.writeText(makeCleanLink(msg));
-    alert("已複製分享連結（乾淨模式）！");
+    const url = location.href.split("?")[0];
+    const shareText = `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
+
+    navigator.clipboard.writeText(shareText);
+    alert("已複製分享連結！");
 };
 
+/* ===== 分享鍵（正面按鍵區） ===== */
 document.getElementById("shareFrontBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
-    if (!msg) return;
-    navigator.clipboard.writeText(makeCleanLink(msg));
-    alert("已複製分享連結（乾淨模式）！");
+    const url = location.href.split("?")[0];
+    const shareText = `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
+
+    navigator.clipboard.writeText(shareText);
+    alert("已複製分享連結！");
 };
 
-/* ===== 送出（一般模式預覽） ===== */
+/* ===== 送出 ===== */
 document.getElementById("sendBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     if (!msg) return;
     lines = msg.split("\n");
     index = 0;
+    
+    // 🌟 修改點：手動送出時，開始自動錄影
+    startRecording();
     showLine();
 };
 
-/* ===== 錄影模式：直接跳到乾淨模式頁面 ===== */
-document.getElementById("recordModeBtn").onclick = () => {
-    const msg = document.getElementById("msgInput").value.trim();
-    if (!msg) {
-        alert("請先輸入訊息！");
-        return;
-    }
-    const link = makeCleanLink(msg);
-    location.href = link; // 同頁切換到只顯示 call 機畫面的模式
-};
-
-/* ============================================================
-   ⭐ clean=1 → 隱藏操作介面 + 自動播放訊息（錄螢幕用）
-   ============================================================ */
+/* ⭐ 網頁載入時檢查是否 clean=1 → 隱藏操作介面 */
 const params = new URLSearchParams(location.search);
 if (params.get("clean") === "1") {
-    const inputArea = document.querySelector(".input-area");
-    const frontButtons = document.querySelector(".front-buttons");
-    if (inputArea) inputArea.style.display = "none";
-    if (frontButtons) frontButtons.style.display = "none";
+    document.querySelector(".input-area").style.display = "none";
+    document.querySelector(".front-buttons").style.display = "none";
 
+    /* 自動播放 URL 的訊息 */
     const urlMsg = params.get("msg");
     if (urlMsg) {
         lines = urlMsg.split("\n");
         index = 0;
-        showLine();
+        
+        // 🌟 修改點：開啟自動播放連結時，同步啟動錄影
+        // 加上微小延遲確保 Canvas 已經準備好繪製第一格
+        setTimeout(() => {
+            startRecording();
+            showLine();
+        }, 100);
     }
-
-    // 可選：提示一次「請開啟螢幕錄影」
-    setTimeout(() => {
-        alert("請開啟 iPhone 螢幕錄影，只錄這個畫面。");
-    }, 500);
 }
 </script>
 
