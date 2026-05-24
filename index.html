@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call – 正面按鍵 + 分享鍵 + 白名牌版</title>
+<title>BB Call – 自動錄影整合版</title>
 
 <style>
 body {
@@ -20,11 +20,8 @@ button {
     padding:10px 12px; border:none; border-radius:6px;
     color:#fff; background:#4caf50; cursor:pointer;
 }
-
-/* ====== 分享鍵 ====== */
-.share-btn {
-    background:#2196f3;
-}
+.share-btn { background:#2196f3; }
+.record-btn { background:#e91e63; }
 
 /* ====== 機身 ====== */
 .pager {
@@ -41,7 +38,7 @@ button {
     transition:transform 0.1s;
 }
 
-/* ====== 正面按鍵區 ====== */
+/* ====== 正面按鍵 ====== */
 .front-buttons {
     position:absolute;
     bottom:20px;
@@ -57,20 +54,14 @@ button {
     height:32px;
     background:#2a2a2a;
     border-radius:50%;
-    box-shadow:
-        0 0 4px #000,
-        inset 0 0 6px #555;
+    box-shadow:0 0 4px #000, inset 0 0 6px #555;
     transition:0.1s;
 }
-
 .btn-front:active {
     transform:scale(0.92);
-    box-shadow:
-        0 0 2px #000,
-        inset 0 0 3px #777;
+    box-shadow:0 0 2px #000, inset 0 0 3px #777;
 }
 
-/* ====== 分享鍵（放在按鍵區右側） ====== */
 .share-front {
     width:60px;
     height:32px;
@@ -113,7 +104,7 @@ button {
     pointer-events:none;
 }
 
-/* ====== 顯示區外沿名牌（白色） ====== */
+/* ====== 名牌 ====== */
 .nameplate {
     position:absolute;
     bottom:-22px;
@@ -124,7 +115,6 @@ button {
     text-shadow:0 0 4px #fff;
 }
 
-/* ====== 機殼名牌（白色） ====== */
 .shell-nameplate {
     position:absolute;
     bottom:60px;
@@ -144,7 +134,7 @@ button {
     image-rendering:pixelated;
 }
 
-/* ====== 來訊震動 ====== */
+/* ====== 震動 ====== */
 .pager.shake {
     animation: shake 0.3s ease;
 }
@@ -164,16 +154,15 @@ button {
   <textarea id="msgInput"></textarea>
   <button id="sendBtn">送出</button>
   <button class="share-btn" id="shareBtn">分享</button>
+  <button class="record-btn" id="recordBtn">錄影</button>
 </div>
 
 <div class="pager">
 
-  <!-- 機殼名牌（白色） -->
   <div class="shell-nameplate">𓃥 白六 CALL</div>
 
   <div class="screen">
 
-    <!-- 顯示區內狀態列 -->
     <div class="status-inside">
         <div>SIG ▂▄▆█</div>
         <div>VIB ≈≈   MSG ✉</div>
@@ -182,17 +171,14 @@ button {
 
     <canvas id="screenCanvas" width="360" height="140"></canvas>
 
-    <!-- 顯示區外沿名牌（白色） -->
     <div class="nameplate">𓃥 白六 CALL</div>
   </div>
 
-  <!-- ⭐ 正面按鍵區 -->
   <div class="front-buttons">
       <div class="btn-front"></div>
       <div class="btn-front"></div>
       <div class="btn-front"></div>
       <div class="btn-front"></div>
-
       <div class="share-front" id="shareFrontBtn">分享</div>
   </div>
 
@@ -210,8 +196,7 @@ ctx.textBaseline = "top";
 ctx.shadowColor = "#b9ffb9";
 ctx.shadowBlur = 6;
 
-/* ===== BB Call 節奏 ===== */
-const HOLD = 120;
+/* ===== 動畫節奏 ===== */
 const SLIDE_SPEED = 0.08;
 const MARQUEE_DELAY = 30;
 const MARQUEE_SPEED = 0.6;
@@ -236,7 +221,7 @@ let slideOutProgress = 0;
 function drawScreen() {
     ctx.clearRect(0,0,W,H);
 
-    let y = 50; // 避開狀態列
+    let y = 50;
 
     if (slidingIn) y += (1 - slideInProgress) * 40;
     if (slidingOut) y -= slideOutProgress * 40;
@@ -310,7 +295,7 @@ function showLine() {
     slideInProgress = 0;
     slideOutProgress = 0;
 
-    /* ⭐ 來訊震動只在第一行 */
+    /* ⭐ 震動只在第一行 */
     if (index === 0) {
         const pager = document.querySelector(".pager");
         pager.classList.add("shake");
@@ -338,30 +323,27 @@ function slideOutStep() {
 
         index++;
 
-        if (index < lines.length) {
-            showLine();
-        }
+        if (index < lines.length) showLine();
+        else stopRecording(); // ⭐ 自動錄影：訊息播完 → 停止錄影
 
     } else requestAnimationFrame(slideOutStep);
 }
 
-/* ===== 分享鍵（上方） ===== */
+/* ===== 分享鍵 ===== */
+function makeShareLink(msg) {
+    const url = location.href.split("?")[0];
+    return `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
+}
+
 document.getElementById("shareBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
-    const url = location.href.split("?")[0];
-    const shareText = `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
-
-    navigator.clipboard.writeText(shareText);
+    navigator.clipboard.writeText(makeShareLink(msg));
     alert("已複製分享連結！");
 };
 
-/* ===== 分享鍵（正面按鍵區） ===== */
 document.getElementById("shareFrontBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
-    const url = location.href.split("?")[0];
-    const shareText = `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
-
-    navigator.clipboard.writeText(shareText);
+    navigator.clipboard.writeText(makeShareLink(msg));
     alert("已複製分享連結！");
 };
 
@@ -374,13 +356,67 @@ document.getElementById("sendBtn").onclick = () => {
     showLine();
 };
 
-/* ⭐ 網頁載入時檢查是否 clean=1 → 隱藏操作介面 */
+/* ============================================================
+   ⭐ 自動錄影整合
+   ============================================================ */
+let recorder;
+let recordedChunks = [];
+
+function startRecording() {
+    recordedChunks = [];
+
+    const stream = canvas.captureStream(30);
+    recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+
+    recorder.ondataavailable = e => recordedChunks.push(e.data);
+
+    recorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: "video/webm" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "bbcall_message.webm";
+        a.click();
+    };
+
+    recorder.start();
+}
+
+function stopRecording() {
+    if (recorder && recorder.state === "recording") {
+        recorder.stop();
+    }
+}
+
+/* ===== 錄影按鈕 ===== */
+document.getElementById("recordBtn").onclick = () => {
+    const msg = document.getElementById("msgInput").value.trim();
+    if (!msg) {
+        alert("請先輸入訊息！");
+        return;
+    }
+
+    // 重置動畫
+    lines = msg.split("\n");
+    index = 0;
+
+    // ⭐ 開始錄影
+    startRecording();
+
+    // ⭐ 開始播放訊息
+    showLine();
+};
+
+/* ============================================================
+   ⭐ clean=1 → 隱藏操作介面 + 自動播放訊息
+   ============================================================ */
 const params = new URLSearchParams(location.search);
 if (params.get("clean") === "1") {
     document.querySelector(".input-area").style.display = "none";
     document.querySelector(".front-buttons").style.display = "none";
+    document.getElementById("recordBtn").style.display = "none";
 
-    /* 自動播放 URL 的訊息 */
     const urlMsg = params.get("msg");
     if (urlMsg) {
         lines = urlMsg.split("\n");
