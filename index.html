@@ -2,440 +2,196 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call - 完整恢復錄影版</title>
-
-<!-- html2canvas：把 BB Call 畫面轉成 Canvas -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<title>BB Call – 恢復版</title>
 
 <style>
-/* 第 2 段會放 CSS */
-/* ====== 全域 ====== */
 body {
-    background: #0d0d0d;
-    color: #eee;
-    font-family: "Courier New", monospace;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 20px;
+    background:#0d0d0d; color:#eee; font-family:"Courier New", monospace;
+    display:flex; flex-direction:column; align-items:center; margin:0; padding-top:20px;
 }
-
-.input-area {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
+.input-area { display:flex; gap:10px; margin-bottom:20px; }
 textarea {
-    width: 260px;
-    height: 120px;
-    padding: 10px;
-    border-radius: 6px;
-    border: 1px solid #555;
-    background: #1a1a1a;
-    color: #eee;
-    font-size: 16px;
-    resize: none;
+    width:240px; height:120px; background:#1a1a1a; color:#eee;
+    border:1px solid #555; border-radius:6px; padding:10px; resize:none;
 }
+button { padding:10px 12px; border:none; border-radius:6px; color:#fff; }
+#sendBtn { background:#4caf50; }
+#recordBtn { background:#ff9800; }
+#shareBtn { background:#2196f3; }
 
-button {
-    padding: 10px 16px;
-    border-radius: 6px;
-    border: none;
-    background: #4caf50;
-    color: #fff;
-    font-size: 15px;
-}
-
-#shareBtn { background: #2196f3; }
-#recordBtn { background: #ff9800; }
-
-/* ====== BB Call 外殼 ====== */
 .pager {
-    width: 360px;
-    height: 260px;
-    border-radius: 22px;
-    background: linear-gradient(145deg, #1b1b1b, #2d2d2d);
-    box-shadow:
-        inset 0 0 10px #000,
-        0 0 0 3px #444,
-        0 12px 25px rgba(0,0,0,0.7),
-        0 0 25px rgba(0,255,0,0.15);
-    padding: 14px;
-    position: relative;
-    overflow: hidden;
-    border: 1px solid #222;
+    width:360px; height:260px; background:#1b1b1b; border-radius:20px;
+    padding:14px; box-sizing:border-box; position:relative;
+    box-shadow:inset 0 0 10px #000, 0 0 0 3px #444;
 }
-
-/* ====== 螢幕 ====== */
 .screen {
-    background: #021a02;
-    border-radius: 8px;
-    border: 3px solid #0f3d0f;
-    height: 140px;
-    position: relative;
-    overflow: hidden;
-    box-shadow:
-        inset 0 0 10px #000,
-        0 0 10px rgba(0,255,0,0.2);
+    width:100%; height:60%; background:#021a02; border:3px solid #0f3d0f;
+    border-radius:8px; position:relative; overflow:hidden;
 }
+#screenCanvas { width:100%; height:100%; display:block; image-rendering:pixelated; }
 
-/* ====== 狀態列 ====== */
-.status-bar {
-    position: absolute;
-    top: 4px;
-    right: 6px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    color: #b9ffb9;
-    font-size: 12px;
-}
-
-/* 訊號格 */
-.signal {
-    display: flex;
-    gap: 2px;
-}
-
-.sig-bar {
-    width: 4px;
-    height: 8px;
-    background: #b9ffb9;
-    box-shadow: 0 0 4px #b9ffb9;
-}
-
-/* VIB */
-.vib {
-    font-weight: bold;
-    text-shadow: 0 0 4px #b9ffb9;
-}
-
-/* 電量格 */
-.battery {
-    width: 18px;
-    height: 10px;
-    border: 2px solid #b9ffb9;
-    position: relative;
-}
-
-.battery::after {
-    content: "";
-    position: absolute;
-    right: -4px;
-    top: 2px;
-    width: 3px;
-    height: 6px;
-    background: #b9ffb9;
-}
-
-.bat-level {
-    width: 70%;
-    height: 100%;
-    background: #b9ffb9;
-}
-
-/* ====== REC 紅點 ====== */
 .rec-indicator {
-    position: absolute;
-    top: 4px;
-    left: 8px;
-    font-size: 12px;
-    font-weight: bold;
-    color: #ff3b3b;
-    text-shadow: 0 0 4px #ff3b3b;
-    opacity: 0;
+    position:absolute; top:4px; left:8px; color:#ff3b3b; font-size:12px;
+    opacity:0; font-weight:bold; text-shadow:0 0 4px #ff3b3b;
 }
+.rec-on { animation:recBlink 0.8s infinite; }
+@keyframes recBlink { 0%{opacity:1;} 50%{opacity:0.2;} 100%{opacity:1;} }
 
-.rec-on {
-    animation: recBlink 0.8s infinite;
-}
-
-@keyframes recBlink {
-    0% { opacity: 1; }
-    50% { opacity: 0.2; }
-    100% { opacity: 1; }
-}
-
-/* ====== 訊息顯示區 ====== */
-.message-area {
-    position: absolute;
-    left: 0;
-    top: 20px;
-    width: 100%;
-    height: 110px;
-    overflow: hidden;
-}
-
-.pixel {
-    font-size: 44px;
-    line-height: 44px;
-    color: #b9ffb9;
-    text-shadow: 0 0 6px #b9ffb9;
-    white-space: nowrap;
-}
-
-/* ====== 上滑換行動畫 ====== */
-.line-in {
-    animation: slideIn 0.35s ease-out;
-}
-
-.line-out {
-    animation: slideOut 0.35s ease-in;
-}
-
-@keyframes slideIn {
-    from { transform: translateY(40px); opacity: 0; }
-    to   { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes slideOut {
-    from { transform: translateY(0); opacity: 1; }
-    to   { transform: translateY(-40px); opacity: 0; }
-}
-
-/* ====== 震動效果 ====== */
-@keyframes vibrate {
-    0% { transform: translate(1px, -1px); }
-    25% { transform: translate(-1px, 1px); }
-    50% { transform: translate(1px, 1px); }
-    75% { transform: translate(-1px, -1px); }
-    100% { transform: translate(1px, -1px); }
-}
-
-.pager.vibrate {
-    animation: vibrate 0.25s linear 4;
-}
-
-/* ====== 裝飾按鈕 ====== */
-.buttons {
-    position: absolute;
-    bottom: 10px;
-    right: 12px;
-    display: flex;
-    gap: 6px;
-    align-items: center;
-}
-
-.btn-round {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
-    box-shadow:
-        inset 0 0 4px #000,
-        0 0 6px #555;
-}
-
-.btn-long {
-    width: 40px;
-    height: 14px;
-    border-radius: 6px;
-    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
-    box-shadow:
-        inset 0 0 4px #000,
-        0 0 6px #555;
-}
-
-/* ====== 品牌字樣 ====== */
-.brand {
-    position: absolute;
-    bottom: 10px;
-    left: 12px;
-    font-size: 18px;
-    color: #ffffff;
-    text-shadow: 0 0 4px #fff, 0 0 8px #fff;
-    font-weight: bold;
-    letter-spacing: 1px;
-}
-
-/* ====== 錄影完成彈窗 ====== */
 #recordDoneBox {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0,0,0,0.85);
-    padding: 18px 26px;
-    border-radius: 12px;
-    color: #fff;
-    font-size: 17px;
-    text-align: center;
-    display: none;
-    z-index: 99999;
-    box-shadow: 0 0 12px rgba(255,255,255,0.2);
+    position:fixed; top:20px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,0.85); padding:20px; border-radius:10px;
+    color:#fff; display:none;
 }
-
-#downloadBtn {
-    margin-top: 10px;
-    padding: 10px 16px;
-    background: #ff5722;
-    border-radius: 6px;
-    color: #fff;
-    border: none;
-    font-size: 15px;
-}
-
 </style>
 </head>
 
 <body>
 
-<!-- ====== 輸入區 ====== -->
 <div class="input-area">
-  <textarea id="msgInput" placeholder="輸入訊息（Enter 換行）"></textarea>
+  <textarea id="msgInput"></textarea>
   <button id="sendBtn">送出</button>
+  <button id="recordBtn">錄影</button>
   <button id="shareBtn">分享</button>
-  <button id="recordBtn">🔴 錄影</button>
 </div>
 
-<!-- ====== BB Call 裝置 ====== -->
 <div class="pager" id="pager">
-
-  <!-- ====== 螢幕 ====== -->
-  <div class="screen" id="screen">
-
-      <!-- 🔴 REC 紅點 -->
-      <div class="rec-indicator" id="recDot">REC ●</div>
-
-      <!-- ====== 狀態列 ====== -->
-      <div class="status-bar">
-        <div class="signal">
-          <span class="sig-bar"></span>
-          <span class="sig-bar"></span>
-          <span class="sig-bar"></span>
-        </div>
-        <div class="vib" id="vibIcon">VIB</div>
-        <div class="battery">
-          <div class="bat-level"></div>
-        </div>
-      </div>
-
-      <!-- ====== 訊息顯示區 ====== -->
-      <div class="message-area" id="messageArea"></div>
-
+  <div class="screen">
+    <div id="recDot" class="rec-indicator">REC ●</div>
+    <canvas id="screenCanvas" width="360" height="140"></canvas>
   </div>
-
-  <!-- ====== 品牌字樣 ====== -->
-  <div class="brand">𓃥 白六 Call</div>
-
-  <!-- ====== 裝飾按鈕 ====== -->
-  <div class="buttons">
-    <div class="btn-round"></div>
-    <div class="btn-long"></div>
-    <div class="btn-round"></div>
-  </div>
-
 </div>
 
-<!-- ====== 錄影完成彈窗 ====== -->
 <div id="recordDoneBox">
-  <div>🎉 錄影完成！</div>
+  <div>錄影完成！</div>
   <button id="downloadBtn">下載影片</button>
 </div>
 
 <script>
-/* 第 3 段會放 JS */
-/* ==========================================
-   🟩 BB Call 逐行 + 跑馬燈 + 上滑換行動畫
-========================================== */
+/* ===== Canvas 初始化 ===== */
+const canvas = document.getElementById("screenCanvas");
+const ctx = canvas.getContext("2d");
+const W = canvas.width, H = canvas.height;
+
+ctx.font = "44px Courier New";
+ctx.fillStyle = "#b9ffb9";
+ctx.textBaseline = "top";
+ctx.shadowColor = "#b9ffb9";
+ctx.shadowBlur = 6;
+
+/* ===== 原始 BB Call 節奏 ===== */
+const HOLD = 60;               // 停留 1 秒
+const SLIDE_SPEED = 0.08;      // 原本的滑動速度
+const MARQUEE_DELAY = 30;      // 跑馬燈延遲 0.5 秒
+const MARQUEE_SPEED = 0.6;
+
+/* ===== 狀態 ===== */
 let lines = [];
 let index = 0;
+let currentText = "";
+let scrollX = 10;
+let marqueeDelay = 0;
 
-function showLine() {
-    if (index >= lines.length) {
-        stopRecording();
-        return;
+let slidingIn = false;
+let slidingOut = false;
+let slideProgress = 0;
+
+let backlight = 0;
+let backlightFade = 0.015;
+
+/* ===== 主畫面繪製 ===== */
+function drawScreen() {
+    ctx.clearRect(0,0,W,H);
+
+    let y = 40; // ⭐ 原本的顯示位置（你最早的版本）
+
+    if (slidingIn)  y += (1 - slideProgress) * 40;
+    if (slidingOut) y -= slideProgress * 40;
+
+    ctx.fillText(currentText, scrollX, y);
+
+    if (backlight > 0) {
+        ctx.fillStyle = `rgba(185,255,185,${backlight * 0.12})`;
+        ctx.fillRect(0,0,W,H);
+        backlight -= backlightFade;
+        if (backlight < 0) backlight = 0;
+    }
+}
+
+/* ===== 動畫主迴圈 ===== */
+function animate() {
+    requestAnimationFrame(animate);
+
+    if (!slidingIn && !slidingOut) {
+        if (marqueeDelay > 0) marqueeDelay--;
+        else {
+            const w = ctx.measureText(currentText).width;
+            if (w > W - 20) {
+                scrollX -= MARQUEE_SPEED;
+                if (scrollX < -(w - (W - 20))) scrollX = 10;
+            }
+        }
     }
 
-    const area = document.getElementById("messageArea");
-    area.innerHTML = "";
+    drawScreen();
+}
+animate();
 
-    const line = document.createElement("div");
-    line.className = "pixel line-in";
-    line.style.position = "absolute";
-    line.style.top = "40px";
-    line.style.left = "10px";
-    line.textContent = lines[index];
+/* ===== 顯示下一行（恢復版） ===== */
+function showLine() {
+    if (index >= lines.length) return;
 
-    area.appendChild(line);
+    currentText = lines[index];
+    scrollX = 10;
 
-    const areaWidth = area.clientWidth;
-    const textWidth = line.scrollWidth;
+    if (index === 0) backlight = 1;
+    marqueeDelay = MARQUEE_DELAY;
 
-    setTimeout(() => {
-        if (textWidth > areaWidth) {
-            const overflow = textWidth - areaWidth + 30;
-            const duration = Math.max(1.5, overflow / 40);
+    slidingIn = true;
+    slidingOut = false;
+    slideProgress = 0;
 
-            line.style.transition = `transform ${duration}s linear`;
-            line.style.transform = `translateX(-${overflow}px)`;
+    function slideInStep() {
+        slideProgress += SLIDE_SPEED;
+        if (slideProgress >= 1) {
+            slidingIn = false;
+            slideProgress = 1;
 
             setTimeout(() => {
-                line.classList.remove("line-in");
-                line.classList.add("line-out");
+                slidingOut = true;
+                slideProgress = 0;
+                requestAnimationFrame(slideOutStep);
+            }, HOLD * 16);
 
-                setTimeout(() => {
-                    index++;
-                    showLine();
-                }, 350);
+        } else requestAnimationFrame(slideInStep);
+    }
 
-            }, duration * 1000 + 1000);
+    function slideOutStep() {
+        slideProgress += SLIDE_SPEED;
+        if (slideProgress >= 1) {
+            slidingOut = false;
+            slideProgress = 1;
+            index++;
+            showLine();
+        } else requestAnimationFrame(slideOutStep);
+    }
 
-        } else {
-            setTimeout(() => {
-                line.classList.remove("line-in");
-                line.classList.add("line-out");
-
-                setTimeout(() => {
-                    index++;
-                    showLine();
-                }, 350);
-
-            }, 1800);
-        }
-    }, 500);
+    requestAnimationFrame(slideInStep);
 }
 
-/* ==========================================
-   🌀 震動效果
-========================================== */
-function vibratePager() {
-    const pager = document.getElementById("pager");
-    pager.classList.add("vibrate");
-    setTimeout(() => pager.classList.remove("vibrate"), 800);
-}
+/* ===== 錄影 ===== */
+let mediaRecorder, recordedChunks = [], isRecording = false;
 
-/* ==========================================
-   🎥 MediaRecorder 錄影整合
-========================================== */
-let mediaRecorder;
-let recordedChunks = [];
-let isRecording = false;
-
-async function startRecording() {
+function startRecording() {
     if (isRecording) return;
-
     recordedChunks = [];
-
-    const pager = document.getElementById("pager");
-
-    const canvas = await html2canvas(pager);
     const stream = canvas.captureStream(30);
+    mediaRecorder = new MediaRecorder(stream, { mimeType:"video/webm" });
 
-    mediaRecorder = new MediaRecorder(stream, {
-        mimeType: "video/webm;codecs=vp9"
-    });
-
-    mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
-    };
-
+    mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
     mediaRecorder.onstop = exportVideo;
 
     mediaRecorder.start();
     isRecording = true;
-
     document.getElementById("recDot").classList.add("rec-on");
 }
 
@@ -443,59 +199,21 @@ function stopRecording() {
     if (!isRecording) return;
     mediaRecorder.stop();
     isRecording = false;
-
     document.getElementById("recDot").classList.remove("rec-on");
 }
 
 function exportVideo() {
-    const blob = new Blob(recordedChunks, { type: "video/webm" });
+    const blob = new Blob(recordedChunks, { type:"video/webm" });
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `bbcall_${Date.now()}.webm`;
-    a.click();
-
+    a.href = url; a.download = "bbcall.webm"; a.click();
     document.getElementById("recordDoneBox").style.display = "block";
-
-    document.getElementById("downloadBtn").onclick = () => {
-        const a2 = document.createElement("a");
-        a2.href = url;
-        a2.download = `bbcall_${Date.now()}.webm`;
-        a2.click();
-    };
 }
 
-/* ==========================================
-   🔗 分享模式 view=clean
-========================================== */
-function applyShareMode() {
-    const params = new URLSearchParams(window.location.search);
-
-    if (params.get("view") === "clean") {
-        document.querySelector(".input-area").style.display = "none";
-        document.getElementById("shareBtn").style.display = "none";
-    }
-
-    if (params.get("record") === "1") {
-        const msg = params.get("msg") || "";
-        lines = msg.split("\n");
-        index = 0;
-
-        startRecording();
-        showLine();
-    }
-}
-
-/* ==========================================
-   🔘 按鈕綁定
-========================================== */
+/* ===== 按鈕 ===== */
 document.getElementById("sendBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     if (!msg) return;
-
-    vibratePager();
-
     lines = msg.split("\n");
     index = 0;
     showLine();
@@ -504,21 +222,11 @@ document.getElementById("sendBtn").onclick = () => {
 document.getElementById("recordBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     if (!msg) return;
-
-    vibratePager();
-
     lines = msg.split("\n");
     index = 0;
-
     startRecording();
     showLine();
 };
-
-/* ==========================================
-   🚀 啟動分享模式
-========================================== */
-applyShareMode();
-
 </script>
 
 </body>
