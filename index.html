@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call – 正面按鍵 + 分享鍵 + 白名牌版 (自動錄影版)</title>
+<title>BB Call – 正面按鍵 + 分享鍵 + 白名牌版 (高畫質錄影版)</title>
 
 <style>
 body {
@@ -111,6 +111,7 @@ button {
     padding:0 6px;
     font-weight:bold;
     pointer-events:none;
+    z-index: 10; /* 確保在畫布上方 */
 }
 
 /* ====== 顯示區外沿名牌（白色） ====== */
@@ -137,23 +138,11 @@ button {
     text-shadow:0 0 4px #fff;
 }
 
+/* 🌟 修改點：移除 pixelated，改用正常渲染 */
 #screenCanvas {
     width:100%;
     height:100%;
     display:block;
-    image-rendering:pixelated;
-}
-
-/* ====== 來訊震動 ====== */
-.pager.shake {
-    animation: shake 0.3s ease;
-}
-@keyframes shake {
-    0%   { transform: translateX(0); }
-    25%  { transform: translateX(-3px); }
-    50%  { transform: translateX(3px); }
-    75%  { transform: translateX(-3px); }
-    100% { transform: translateX(0); }
 }
 
 /* ====== 錄影狀態提示燈 ====== */
@@ -173,12 +162,23 @@ button {
 @keyframes blink {
     50% { opacity: 0.3; }
 }
+
+/* ====== 來訊震動 ====== */
+.pager.shake {
+    animation: shake 0.3s ease;
+}
+@keyframes shake {
+    0%   { transform: translateX(0); }
+    25%  { transform: translateX(-3px); }
+    50%  { transform: translateX(3px); }
+    75%  { transform: translateX(-3px); }
+    100% { transform: translateX(0); }
+}
 </style>
 </head>
 
 <body>
 
-<!-- 錄影狀態提示 -->
 <div id="recIndicator" class="rec-indicator">● REC AUTOMATIC</div>
 
 <div class="input-area">
@@ -188,35 +188,27 @@ button {
 </div>
 
 <div class="pager">
-
-  <!-- 機殼名牌（白色） -->
   <div class="shell-nameplate">𓃥 白六 CALL</div>
 
   <div class="screen">
-
-    <!-- 顯示區內狀態列 -->
     <div class="status-inside">
         <div>SIG ▂▄▆█</div>
         <div>VIB ≈≈   MSG ✉</div>
         <div>BAT [▮▮▯]</div>
     </div>
 
-    <canvas id="screenCanvas" width="360" height="140"></canvas>
+    <canvas id="screenCanvas" width="1080" height="420"></canvas>
 
-    <!-- 顯示區外沿名牌（白色） -->
     <div class="nameplate">𓃥 白六 CALL</div>
   </div>
 
-  <!-- ⭐ 正面按鍵區 -->
   <div class="front-buttons">
       <div class="btn-front"></div>
       <div class="btn-front"></div>
       <div class="btn-front"></div>
       <div class="btn-front"></div>
-
       <div class="share-front" id="shareFrontBtn">分享</div>
   </div>
-
 </div>
 
 <script>
@@ -225,23 +217,24 @@ const canvas = document.getElementById("screenCanvas");
 const ctx = canvas.getContext("2d");
 const W = canvas.width, H = canvas.height;
 
-ctx.font = "44px Courier New";
+// 🌟 修改點：因為畫布變大 3 倍，字體、發光、間距也同步放大 3 倍
+ctx.font = "132px 'Courier New'"; 
 ctx.fillStyle = "#b9ffb9";
 ctx.textBaseline = "top";
 ctx.shadowColor = "#b9ffb9";
-ctx.shadowBlur = 6;
+ctx.shadowBlur = 18; 
 
-/* ===== BB Call 節奏 ===== */
+/* ===== BB Call 節奏 (配合高解析度等比例放大速度) ===== */
 const HOLD = 120;
 const SLIDE_SPEED = 0.08;
 const MARQUEE_DELAY = 30;
-const MARQUEE_SPEED = 0.6;
+const MARQUEE_SPEED = 1.8; // 🌟 速度同步乘以 3 保持體感速度一致
 
 /* ===== 狀態 ===== */
 let lines = [];
 let index = 0;
 let currentText = "";
-let scrollX = 10;
+let scrollX = 30; // 🌟 初始邊距乘以 3
 
 let marqueeDelay = 0;
 let marqueeFinished = false;
@@ -262,10 +255,10 @@ let isRecording = false;
 function drawScreen() {
     ctx.clearRect(0,0,W,H);
 
-    let y = 50; // 避開狀態列
+    let y = 150; // 🌟 避開狀態列的 Y 軸位置乘以 3
 
-    if (slidingIn) y += (1 - slideInProgress) * 40;
-    if (slidingOut) y -= slideOutProgress * 40;
+    if (slidingIn) y += (1 - slideInProgress) * 120;  // 🌟 移動距離乘以 3
+    if (slidingOut) y -= slideOutProgress * 120;
 
     ctx.fillText(currentText, scrollX, y);
 }
@@ -278,7 +271,8 @@ function animate() {
 
         const w = ctx.measureText(currentText).width;
 
-        if (w <= W - 20 && !marqueeFinished) {
+        // 🌟 判斷邊界等比例乘以 3
+        if (w <= W - 60 && !marqueeFinished) {
             marqueeFinished = true;
             marqueeHold = 60;
         }
@@ -290,7 +284,6 @@ function animate() {
                 return;
             } else {
 
-                // 🌟 修改點：當所有訊息播完，停止錄影並存檔
                 if (index === lines.length - 1) {
                     if (isRecording) {
                         stopRecordingAndDownload();
@@ -308,10 +301,10 @@ function animate() {
 
         if (marqueeDelay > 0) marqueeDelay--;
         else {
-            if (w > W - 20) {
+            if (w > W - 60) {
                 scrollX -= MARQUEE_SPEED;
 
-                if (scrollX < -(w - (W - 20))) {
+                if (scrollX < -(w - (W - 60))) {
                     marqueeFinished = true;
                     marqueeHold = 60;
                 }
@@ -328,7 +321,7 @@ function showLine() {
     if (index >= lines.length) return;
 
     currentText = lines[index];
-    scrollX = 10;
+    scrollX = 30; // 🌟 乘以 3
 
     marqueeDelay = MARQUEE_DELAY;
     marqueeFinished = false;
@@ -340,7 +333,6 @@ function showLine() {
     slideInProgress = 0;
     slideOutProgress = 0;
 
-    /* ⭐ 來訊震動只在第一行 */
     if (index === 0) {
         const pager = document.querySelector(".pager");
         pager.classList.add("shake");
@@ -377,16 +369,15 @@ function slideOutStep() {
 
 /* ===== 🎦 自動錄影與存檔核心函式 ===== */
 function startRecording() {
-    // 預防前一次錄影未正確結束
     if (isRecording) return; 
     
     recordedChunks = [];
-    // 擷取 canvas 畫面，設定 30 FPS
     const stream = canvas.captureStream(30); 
     
-    // 設定錄影格式 (優先使用 webm，大多瀏覽器支援)
+    // 🌟 這裡提高錄影的碼率 (Bits Per Second) 確保影片不會有大範圍的黑邊失真
     mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9'
+        mimeType: 'video/webm;codecs=vp9',
+        videoBitsPerSecond: 2500000 // 2.5 Mbps
     });
 
     mediaRecorder.ondataavailable = (event) => {
@@ -399,14 +390,12 @@ function startRecording() {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         
-        // 建立自動下載連結
         const a = document.createElement('a');
         a.href = url;
         a.download = `bbcall-${Date.now()}.webm`;
         document.body.appendChild(a);
         a.click();
         
-        // 清理記憶體
         setTimeout(() => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
@@ -454,25 +443,21 @@ document.getElementById("sendBtn").onclick = () => {
     lines = msg.split("\n");
     index = 0;
     
-    // 🌟 修改點：手動送出時，開始自動錄影
     startRecording();
     showLine();
 };
 
-/* ⭐ 網頁載入時檢查是否 clean=1 → 隱藏操作介面 */
+/* 網頁載入時檢查是否 clean=1 */
 const params = new URLSearchParams(location.search);
 if (params.get("clean") === "1") {
     document.querySelector(".input-area").style.display = "none";
     document.querySelector(".front-buttons").style.display = "none";
 
-    /* 自動播放 URL 的訊息 */
     const urlMsg = params.get("msg");
     if (urlMsg) {
         lines = urlMsg.split("\n");
         index = 0;
         
-        // 🌟 修改點：開啟自動播放連結時，同步啟動錄影
-        // 加上微小延遲確保 Canvas 已經準備好繪製第一格
         setTimeout(() => {
             startRecording();
             showLine();
