@@ -2,26 +2,90 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call – 可換行穩定版</title>
+<title>BB Call – 正面按鍵 + 分享鍵 + 白名牌版</title>
 
 <style>
 body {
     background:#0d0d0d; color:#eee; font-family:"Courier New", monospace;
     display:flex; flex-direction:column; align-items:center; margin:0; padding-top:20px;
 }
+
+/* ====== 輸入區 ====== */
 .input-area { display:flex; gap:10px; margin-bottom:20px; }
 textarea {
     width:240px; height:120px; background:#1a1a1a; color:#eee;
     border:1px solid #555; border-radius:6px; padding:10px; resize:none;
 }
-button { padding:10px 12px; border:none; border-radius:6px; color:#fff; background:#4caf50; }
-
-.pager {
-    width:360px; height:260px; background:#1b1b1b; border-radius:20px;
-    padding:14px; box-sizing:border-box; position:relative;
-    box-shadow:inset 0 0 10px #000, 0 0 0 3px #444;
+button {
+    padding:10px 12px; border:none; border-radius:6px;
+    color:#fff; background:#4caf50; cursor:pointer;
 }
 
+/* ====== 分享鍵 ====== */
+.share-btn {
+    background:#2196f3;
+}
+
+/* ====== 機身 ====== */
+.pager {
+    width:360px; height:300px;
+    background:#1b1b1b;
+    border-radius:20px;
+    padding:14px;
+    box-sizing:border-box;
+    position:relative;
+    box-shadow:
+        inset 0 0 10px #000,
+        0 0 0 3px #444,
+        0 0 20px #000;
+    transition:transform 0.1s;
+}
+
+/* ====== 正面按鍵區 ====== */
+.front-buttons {
+    position:absolute;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    width:260px;
+    display:flex;
+    justify-content:space-between;
+}
+
+.btn-front {
+    width:32px;
+    height:32px;
+    background:#2a2a2a;
+    border-radius:50%;
+    box-shadow:
+        0 0 4px #000,
+        inset 0 0 6px #555;
+    transition:0.1s;
+}
+
+.btn-front:active {
+    transform:scale(0.92);
+    box-shadow:
+        0 0 2px #000,
+        inset 0 0 3px #777;
+}
+
+/* ====== 分享鍵（放在按鍵區右側） ====== */
+.share-front {
+    width:60px;
+    height:32px;
+    background:#2196f3;
+    border-radius:8px;
+    color:white;
+    font-size:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 0 4px #000, inset 0 0 4px #555;
+    cursor:pointer;
+}
+
+/* ====== 顯示區 ====== */
 .screen {
     width:100%;
     height:140px;
@@ -30,6 +94,47 @@ button { padding:10px 12px; border:none; border-radius:6px; color:#fff; backgrou
     border-radius:8px;
     position:relative;
     overflow:hidden;
+    box-shadow:inset 0 0 12px #000;
+}
+
+/* ====== 顯示區內狀態列 ====== */
+.status-inside {
+    position:absolute;
+    top:2px;
+    left:0;
+    width:100%;
+    height:20px;
+    color:#7aff7a;
+    font-size:13px;
+    display:flex;
+    justify-content:space-between;
+    padding:0 6px;
+    font-weight:bold;
+    pointer-events:none;
+}
+
+/* ====== 顯示區外沿名牌（白色） ====== */
+.nameplate {
+    position:absolute;
+    bottom:-22px;
+    left:10px;
+    color:#ffffff;
+    font-size:14px;
+    opacity:0.95;
+    text-shadow:0 0 4px #fff;
+}
+
+/* ====== 機殼名牌（白色） ====== */
+.shell-nameplate {
+    position:absolute;
+    bottom:60px;
+    left:50%;
+    transform:translateX(-50%);
+    color:#ffffff;
+    font-size:16px;
+    font-weight:bold;
+    opacity:0.95;
+    text-shadow:0 0 4px #fff;
 }
 
 #screenCanvas {
@@ -37,6 +142,18 @@ button { padding:10px 12px; border:none; border-radius:6px; color:#fff; backgrou
     height:100%;
     display:block;
     image-rendering:pixelated;
+}
+
+/* ====== 來訊震動 ====== */
+.pager.shake {
+    animation: shake 0.3s ease;
+}
+@keyframes shake {
+    0%   { transform: translateX(0); }
+    25%  { transform: translateX(-3px); }
+    50%  { transform: translateX(3px); }
+    75%  { transform: translateX(-3px); }
+    100% { transform: translateX(0); }
 }
 </style>
 </head>
@@ -46,12 +163,39 @@ button { padding:10px 12px; border:none; border-radius:6px; color:#fff; backgrou
 <div class="input-area">
   <textarea id="msgInput"></textarea>
   <button id="sendBtn">送出</button>
+  <button class="share-btn" id="shareBtn">分享</button>
 </div>
 
 <div class="pager">
+
+  <!-- 機殼名牌（白色） -->
+  <div class="shell-nameplate">𓃥 白六 CALL</div>
+
   <div class="screen">
+
+    <!-- 顯示區內狀態列 -->
+    <div class="status-inside">
+        <div>SIG ▂▄▆█</div>
+        <div>VIB ≈≈   MSG ✉</div>
+        <div>BAT [▮▮▯]</div>
+    </div>
+
     <canvas id="screenCanvas" width="360" height="140"></canvas>
+
+    <!-- 顯示區外沿名牌（白色） -->
+    <div class="nameplate">𓃥 白六 CALL</div>
   </div>
+
+  <!-- ⭐ 正面按鍵區 -->
+  <div class="front-buttons">
+      <div class="btn-front"></div>
+      <div class="btn-front"></div>
+      <div class="btn-front"></div>
+      <div class="btn-front"></div>
+
+      <div class="share-front" id="shareFrontBtn">分享</div>
+  </div>
+
 </div>
 
 <script>
@@ -67,9 +211,9 @@ ctx.shadowColor = "#b9ffb9";
 ctx.shadowBlur = 6;
 
 /* ===== BB Call 節奏 ===== */
-const HOLD = 120;              // 停留 2 秒
+const HOLD = 120;
 const SLIDE_SPEED = 0.08;
-const MARQUEE_DELAY = 30;      // 跑馬燈延遲 0.5 秒
+const MARQUEE_DELAY = 30;
 const MARQUEE_SPEED = 0.6;
 
 /* ===== 狀態 ===== */
@@ -92,7 +236,7 @@ let slideOutProgress = 0;
 function drawScreen() {
     ctx.clearRect(0,0,W,H);
 
-    let y = 40;
+    let y = 50; // 避開狀態列
 
     if (slidingIn) y += (1 - slideInProgress) * 40;
     if (slidingOut) y -= slideOutProgress * 40;
@@ -104,17 +248,26 @@ function drawScreen() {
 function animate() {
     requestAnimationFrame(animate);
 
-    // ⭐ 跑馬燈只在完全靜止時啟動
     if (!slidingIn && !slidingOut && slideInProgress === 1 && slideOutProgress === 0) {
 
-        // ⭐ 跑馬燈跑完後停 1 秒
+        const w = ctx.measureText(currentText).width;
+
+        if (w <= W - 20 && !marqueeFinished) {
+            marqueeFinished = true;
+            marqueeHold = 60;
+        }
+
         if (marqueeFinished) {
             if (marqueeHold > 0) {
                 marqueeHold--;
                 drawScreen();
                 return;
             } else {
-                // ⭐ 停 1 秒後 → 直接滑出（保證換行）
+
+                if (index === lines.length - 1) {
+                    return;
+                }
+
                 slidingOut = true;
                 slideOutProgress = 0;
                 marqueeFinished = false;
@@ -123,18 +276,14 @@ function animate() {
             }
         }
 
-        // ⭐ 跑馬燈延遲
         if (marqueeDelay > 0) marqueeDelay--;
         else {
-            const w = ctx.measureText(currentText).width;
-
             if (w > W - 20) {
                 scrollX -= MARQUEE_SPEED;
 
-                // ⭐ 跑馬燈跑完 → 停 1 秒
                 if (scrollX < -(w - (W - 20))) {
                     marqueeFinished = true;
-                    marqueeHold = 60;   // 停 1 秒
+                    marqueeHold = 60;
                 }
             }
         }
@@ -161,6 +310,11 @@ function showLine() {
     slideInProgress = 0;
     slideOutProgress = 0;
 
+    /* ⭐ 來訊震動 */
+    const pager = document.querySelector(".pager");
+    pager.classList.add("shake");
+    setTimeout(() => pager.classList.remove("shake"), 300);
+
     requestAnimationFrame(slideInStep);
 }
 
@@ -170,7 +324,6 @@ function slideInStep() {
     if (slideInProgress >= 1) {
         slidingIn = false;
         slideInProgress = 1;
-        // ⭐ 滑入完成後 → 等跑馬燈
     } else requestAnimationFrame(slideInStep);
 }
 
@@ -180,12 +333,37 @@ function slideOutStep() {
     if (slideOutProgress >= 1) {
         slidingOut = false;
         slideOutProgress = 1;
+
         index++;
-        showLine();   // ⭐ 換行一定會發生
+
+        if (index < lines.length) {
+            showLine();
+        }
+
     } else requestAnimationFrame(slideOutStep);
 }
 
-/* ===== 按鈕 ===== */
+/* ===== 分享鍵（上方） ===== */
+document.getElementById("shareBtn").onclick = () => {
+    const msg = document.getElementById("msgInput").value.trim();
+    const url = location.href.split("?")[0];
+    const shareText = `${url}?msg=${encodeURIComponent(msg)}`;
+
+    navigator.clipboard.writeText(shareText);
+    alert("已複製分享連結！");
+};
+
+/* ===== 分享鍵（正面按鍵區） ===== */
+document.getElementById("shareFrontBtn").onclick = () => {
+    const msg = document.getElementById("msgInput").value.trim();
+    const url = location.href.split("?")[0];
+    const shareText = `${url}?msg=${encodeURIComponent(msg)}`;
+
+    navigator.clipboard.writeText(shareText);
+    alert("已複製分享連結！");
+};
+
+/* ===== 送出 ===== */
 document.getElementById("sendBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     if (!msg) return;
