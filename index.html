@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8" />
-<title>BB Call – 自動錄影（手動存檔）版</title>
+<title>BB Call – 錄螢幕版</title>
 
 <style>
 body {
@@ -21,7 +21,7 @@ button {
     color:#fff; background:#4caf50; cursor:pointer;
 }
 .share-btn { background:#2196f3; }
-.record-btn { background:#e91e63; }
+.record-mode-btn { background:#e91e63; }
 
 /* ====== 機身 ====== */
 .pager {
@@ -153,8 +153,8 @@ button {
 <div class="input-area">
   <textarea id="msgInput"></textarea>
   <button id="sendBtn">送出</button>
-  <button class="share-btn" id="shareBtn">分享</button>
-  <button class="record-btn" id="recordBtn">錄影</button>
+  <button class="share-btn" id="shareBtn">分享連結</button>
+  <button class="record-mode-btn" id="recordModeBtn">錄影模式</button>
 </div>
 
 <div class="pager">
@@ -324,30 +324,31 @@ function slideOutStep() {
         index++;
 
         if (index < lines.length) showLine();
-        else stopRecording(); // ⭐ 訊息播完 → 停止錄影（不自動下載）
 
     } else requestAnimationFrame(slideOutStep);
 }
 
-/* ===== 分享鍵 ===== */
-function makeShareLink(msg) {
+/* ===== 分享連結（乾淨模式） ===== */
+function makeCleanLink(msg) {
     const url = location.href.split("?")[0];
     return `${url}?msg=${encodeURIComponent(msg)}&clean=1`;
 }
 
 document.getElementById("shareBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
-    navigator.clipboard.writeText(makeShareLink(msg));
-    alert("已複製分享連結！");
+    if (!msg) return;
+    navigator.clipboard.writeText(makeCleanLink(msg));
+    alert("已複製分享連結（乾淨模式）！");
 };
 
 document.getElementById("shareFrontBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
-    navigator.clipboard.writeText(makeShareLink(msg));
-    alert("已複製分享連結！");
+    if (!msg) return;
+    navigator.clipboard.writeText(makeCleanLink(msg));
+    alert("已複製分享連結（乾淨模式）！");
 };
 
-/* ===== 送出 ===== */
+/* ===== 送出（一般模式預覽） ===== */
 document.getElementById("sendBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     if (!msg) return;
@@ -356,81 +357,26 @@ document.getElementById("sendBtn").onclick = () => {
     showLine();
 };
 
-/* ============================================================
-   ⭐ 自動錄影（手動存檔）
-   ============================================================ */
-let recorder;
-let recordedChunks = [];
-
-function startRecording() {
-    recordedChunks = [];
-
-    const stream = canvas.captureStream(30);
-    recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
-
-    recorder.ondataavailable = e => recordedChunks.push(e.data);
-
-    recorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-
-        // ⭐ 顯示手動下載按鈕
-        const dlBtn = document.createElement("button");
-        dlBtn.textContent = "下載錄影";
-        dlBtn.style.marginTop = "10px";
-        dlBtn.style.padding = "10px 14px";
-        dlBtn.style.background = "#e91e63";
-        dlBtn.style.color = "white";
-        dlBtn.style.border = "none";
-        dlBtn.style.borderRadius = "6px";
-        dlBtn.style.cursor = "pointer";
-
-        dlBtn.onclick = () => {
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "bbcall_message.webm";
-            a.click();
-        };
-
-        document.body.appendChild(dlBtn);
-    };
-
-    recorder.start();
-}
-
-function stopRecording() {
-    if (recorder && recorder.state === "recording") {
-        recorder.stop();
-    }
-}
-
-/* ===== 錄影按鈕 ===== */
-document.getElementById("recordBtn").onclick = () => {
+/* ===== 錄影模式：直接跳到乾淨模式頁面 ===== */
+document.getElementById("recordModeBtn").onclick = () => {
     const msg = document.getElementById("msgInput").value.trim();
     if (!msg) {
         alert("請先輸入訊息！");
         return;
     }
-
-    // 重置動畫
-    lines = msg.split("\n");
-    index = 0;
-
-    // ⭐ 開始錄影
-    startRecording();
-
-    // ⭐ 開始播放訊息
-    showLine();
+    const link = makeCleanLink(msg);
+    location.href = link; // 同頁切換到只顯示 call 機畫面的模式
 };
 
 /* ============================================================
-   ⭐ clean=1 → 隱藏操作介面 + 自動播放訊息
+   ⭐ clean=1 → 隱藏操作介面 + 自動播放訊息（錄螢幕用）
    ============================================================ */
 const params = new URLSearchParams(location.search);
 if (params.get("clean") === "1") {
-    document.querySelector(".input-area").style.display = "none";
-    document.querySelector(".front-buttons").style.display = "none";
-    document.getElementById("recordBtn").style.display = "none";
+    const inputArea = document.querySelector(".input-area");
+    const frontButtons = document.querySelector(".front-buttons");
+    if (inputArea) inputArea.style.display = "none";
+    if (frontButtons) frontButtons.style.display = "none";
 
     const urlMsg = params.get("msg");
     if (urlMsg) {
@@ -438,6 +384,11 @@ if (params.get("clean") === "1") {
         index = 0;
         showLine();
     }
+
+    // 可選：提示一次「請開啟螢幕錄影」
+    setTimeout(() => {
+        alert("請開啟 iPhone 螢幕錄影，只錄這個畫面。");
+    }, 500);
 }
 </script>
 
